@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Vehículos</title>
+    <link rel="stylesheet" href="Estilos/vehic.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<header class="header">
+    <h1>Gestión de Vehículos</h1>
+    <a href="index.html" class="btn-volver">Volver</a>
+</header>
+
+<main>
+
+    <!-- FORMULARIO DE ENTRADA -->
+    <div class="form-container">
+        <h2>Registrar Entrada de Vehículo</h2>
+
+        <div class="row">
+            <input type="text" id="Marca" placeholder="Marca *" required>
+            <input type="text" id="Modelo" placeholder="Modelo *" required>
+        </div>
+
+        <div class="row">
+            <input type="text" id="Año" placeholder="Año" pattern="\d{4}">
+            <input type="text" id="Numero_chasis" placeholder="Número de Chasis *" maxlength="16" required>
+        </div>
+
+        <div class="row">
+            <select id="id_client" required></select>
+            <select id="id_trabajo" required></select>
+        </div>
+
+        <div class="row">
+            <label>Fotos de entrada (Máx. 5):</label>
+            <input type="file" id="foto_int" accept="image/*" multiple>
+            <div id="preview-container" class="preview-container"></div>
+        </div>
+
+        <button class="btn-registrar" onclick="registrarVehiculo()">Registrar Vehículo</button>
+        <div id="mensaje-error" class="mensaje-error"></div>
+    </div>
+
+
+    <!-- TABLA -->
+    <div class="veh-lista">
+        <h2>Vehículos Registrados</h2>
+
+        <input type="text" id="buscar" class="input-buscar" placeholder="Buscar por marca, modelo o chasis..." onkeyup="filtrarTabla()">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Vehículo</th>
+                    <th>Chasis</th>
+                    <th>Cliente</th>
+                    <th>Trabajo</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-veh"></tbody>
+        </table>
+    </div>
+
+</main>
+
+<!-- MODAL PARA VER VEHÍCULO -->
+<div id="modal-vehiculo" class="modal">
+    <div class="modal-contenido">
+        <span class="cerrar-modal" onclick="cerrarModal()">&times;</span>
+        <div id="modal-contenido"></div>
+    </div>
+</div>
+
+<script src="JS/vehic.js"></script>
+</body>
+</html>

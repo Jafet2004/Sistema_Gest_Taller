@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Taller Rostrán</title>
+  <link rel="stylesheet" href="/Estilos/ind.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js para gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="Estilos/dash.css">
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="src/img_/logo.png" alt="Logo Taller Rostrán" height="50" width="50">
+        <h1>Taller Rostrán</h1>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <nav class="nav-menu">
+        <a href="#" class="nav-link admin-panel">
+          <i class="fas fa-cog"></i>
+          <span>Panel Administrativo</span>
+        </a>
+
+        <div id="user-info">
+        <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="dashboard fade-in">
+    <div class="dashboard-header">
+      <h2>Dashboard - Estadísticas</h2>
+      <p class="subtitle">Métricas y estadísticas en tiempo real del taller</p>
+    </div>
+
+    <!-- Notificaciones -->
+    <div class="notifications-bar" id="notificationsContainer">
+      <h3><i class="fas fa-bell"></i> Notificaciones recientes</h3>
+      <div id="notificationsList">
+        <p>Cargando notificaciones...</p>
+      </div>
+    </div>
+
+    <!-- Estadísticas Principales -->
+    <div class="stats-grid">
+      <!-- Total Clientes -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon clients">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Clientes Totales</h3>
+            <div class="stat-number" id="totalClientes"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Clientes registrados en el sistema</span>
+        </div>
+      </div>
+
+      <!-- Total Vehículos -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon vehicles">
+            <i class="fas fa-car"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Vehículos en Taller</h3>
+            <div class="stat-number" id="totalVehiculos"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Vehículos actualmente en el taller</span>
+        </div>
+      </div>
+
+      <!-- Total Trabajadores -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon workers">
+            <i class="fas fa-user-tie"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Trabajadores</h3>
+            <div class="stat-number" id="totalTrabajadores"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Personal activo en el taller</span>
+        </div>
+      </div>
+
+      <!-- Total Inventario -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon inventory">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Items en Inventario</h3>
+            <div class="stat-number" id="totalInventario"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Herramientas y repuestos disponibles</span>
+        </div>
+      </div>
+
+      <!-- Vehículos por Semana -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon agenda">
+            <i class="fas fa-calendar-week"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Vehículos/Semana</h3>
+            <div class="stat-number" id="vehiculosSemana"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Promedio de vehículos por semana</span>
+        </div>
+      </div>
+
+      <!-- Vehículos por Cliente -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon reports">
+            <i class="fas fa-chart-pie"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Vehículos/Cliente</h3>
+            <div class="stat-number" id="vehiculosPorCliente"></div>
+          </div>
+        </div>
+        <div class="stat-footer">
+          <span>Promedio de vehículos por cliente</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos y Visualizaciones -->
+    <div class="charts-container">
+      <!-- Gráfico 1: Vehículos por semana -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fas fa-chart-line"></i> Vehículos por Semana (Últimas 4 semanas)</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="vehiculosSemanaChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 2: Distribución por Marcas -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fas fa-chart-pie"></i> Distribución por Marcas</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="marcasChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 3: Vehículos por Cliente -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fas fa-chart-bar"></i> Top 5 Clientes con más Vehículos</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="clientesVehiculosChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Vehículos Recientes -->
+    <div class="table-container">
+      <div class="table-header">
+        <h3><i class="fas fa-car-side"></i> Vehículos Recientes en el Taller</h3>
+        <button class="refresh-btn" onclick="loadDashboardData()">
+          <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Año</th>
+            <th>Cliente</th>
+            <th>Fecha Entrada</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="recentVehiclesTable">
+          <tr>
+            <td colspan="6">Cargando datos...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <script src="JS/dash.js"></script>
+
+</body>
+
+</html>

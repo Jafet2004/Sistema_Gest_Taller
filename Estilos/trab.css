@@ -1,0 +1,129 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #f8f0f0;
+}
+
+/* HEADER */
+.header {
+    background: #b71c1c;
+    color: white;
+    padding: 1.3rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header .btn-volver {
+    background: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    color: #b71c1c;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+main {
+    width: 90%;
+    margin: 2rem auto;
+}
+
+/* FORMULARIO */
+.form-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-container h2 {
+    margin-bottom: 1rem;
+    color: #b71c1c;
+}
+
+.row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+input {
+    flex: 1;
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+/* BOTÓN REGISTRAR */
+.btn-registrar {
+    width: 100%;
+    background: #b71c1c;
+    color: white;
+    border: none;
+    padding: 0.9rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-registrar:hover {
+    background: #ff1e1e;
+}
+
+/* TABLA */
+.trab-lista {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.trab-lista h2 {
+    margin-bottom: 1rem;
+    color: #b71c1c;
+}
+
+.input-buscar {
+    width: 100%;
+    padding: 0.7rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #f3dcdc;
+    color: #b71c1c;
+    padding: 0.7rem;
+}
+
+td {
+    border-bottom: 1px solid #ddd;
+    padding: 0.7rem;
+}
+
+/* BOTONES CRUD */
+.btn-editar,
+.btn-eliminar {
+    background: #e43622;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-editar:hover,
+.btn-eliminar:hover {
+    background: #a52b1d;
+}

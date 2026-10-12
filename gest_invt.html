@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario - Taller Rostrán</title>
+
+    <link rel="stylesheet" href="Estilos/inv.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1><i class="fas fa-boxes"></i> Gestión de Inventario</h1>
+        <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+    </header>
+
+    <main>
+
+        <!-- FORMULARIO -->
+        <section class="form-container">
+            <h2>Registrar Herramienta</h2>
+
+            <form id="formHerramienta">
+                <div class="row">
+                    <input type="text" id="tool_name" placeholder="Nombre de la Herramienta" required>
+                    <input type="text" id="tool_marca" placeholder="Marca de la Herramienta" required>
+                    <input type="number" id="tool_cantidad" placeholder="Cantidad" required>
+                </div>
+
+                <button type="submit" class="btn-registrar">
+                    <i class="fas fa-save"></i> Guardar Herramienta
+                </button>
+            </form>
+        </section>
+
+        <!-- LISTA Inventario -->
+        <section class="Inventario-lista">
+            <h2>Herramientas Registradas</h2>
+
+            <input type="text" id="buscar" placeholder="Buscar herramienta..." class="input-buscar">
+
+            <table id="tablaHerramientas">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Marca</th>
+                        <th>Cantidad</th>
+                        <th class="CRUD">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <script src="JS/inv.js"></script>
+</body>
+
+</html>

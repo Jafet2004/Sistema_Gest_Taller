@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Principal - Taller Rostrán</title>
+  <link rel="stylesheet" href="/Estilos/ind.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">
+      <img src="src/img_/logo.png" alt="Logo Taller Rostrán" height="50" width="50">
+      <h1>Taller Rostrán</h1>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <nav class="nav-menu">
+      <a href="dashboard.html" class="nav-link admin-panel">
+        <i class="fas fa-cog"></i>
+        <span>Panel Administrativo</span>
+      </a>
+
+      <div id="user-info">
+        <!--
+        <span id="username" class="username">Usuario</span>
+        <a href="login.html" id="logoutBtn" class="btn-red">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Cerrar Sesión</span>
+        </a>
+        !-->
+      </div>
+    </nav>
+  </div>
+</header>
+
+<body>
+  <!-- MAIN CONTENT -->
+  <main class="dashboard fade-in">
+    <div class="dashboard-header">
+      <h2>Panel de Control</h2>
+      <p class="subtitle">Gestiona todas las áreas del taller desde un solo lugar</p>
+      <div class="notifications-bar" id="tablaCitas">
+          <h3>Notificaciones recientes</h3>
+          <p>No hay alertas nuevas por ahora.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+      <!-- Cada card -->
+      <div class="dashboard-card">
+        <div class="card-icon clients"><i class="fas fa-users"></i></div>
+        <h3>Clientes</h3>
+        <p>Gestiona información de clientes y su historial</p>
+        <a href="gest_clt.html" class="card-btn">Administrar <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon inventory"><i class="fas fa-boxes"></i></div>
+        <h3>Inventario</h3>
+        <p>Control total de repuestos y herramientas</p>
+        <a href="gest_invt.html" class="card-btn">Ver Stock <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon workers"><i class="fas fa-user-tie"></i></div>
+        <h3>Trabajadores</h3>
+        <p>Gestión de empleados y asignación de tareas</p>
+        <a href="gest_trab.html" class="card-btn">Ver Equipo <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon jobs"><i class="fas fa-tasks"></i></div>
+        <h3>Servicios</h3>
+        <p>Seguimiento de reparaciones en curso</p>
+        <a href="serv.html" class="card-btn">Ver Trabajos <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon agenda"><i class="fas fa-calendar-alt"></i></div>
+        <h3>Agenda</h3>
+        <p>Citas programadas del taller</p>
+        <a href="agend.html" class="card-btn">Ver Agenda <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+
+      <div class="dashboard-card">
+        <div class="card-icon vehicles"><i class="fas fa-car"></i></div>
+        <h3>Vehículos</h3>
+        <p>Registro y seguimiento de vehículos</p>
+        <a href="gest_veh.html" class="card-btn">Ver Vehículos <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon reports"><i class="fas fa-chart-line"></i></div>
+        <h3>Reportes</h3>
+        <p>Estadísticas y métricas del taller</p>
+        <a href="view_report.html" class="card-btn">Ver Reportes <i class="fas fa-arrow-right"></i></a>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="JS/notif.js"></script>
+</body>
+
+</html>

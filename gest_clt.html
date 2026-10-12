@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes - Taller Rostrán</title>
+
+    <link rel="stylesheet" href="Estilos/clint.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1><i class="fas fa-users"></i> Gestión de Clientes</h1>
+        <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+    </header>
+
+    <main>
+
+        <!-- FORMULARIO -->
+        <section class="form-container">
+            <h2>Registrar Cliente</h2>
+
+            <form id="formCliente">
+                <div class="row">
+                    <input type="text" id="pr_name" placeholder="Primer Nombre" required>
+                    <input type="text" id="sc_name" placeholder="Segundo Nombre" required>
+                </div>
+
+                <div class="row">
+                    <input type="text" id="pr_lastname" placeholder="Primer Apellido" required>
+                    <input type="text" id="sc_lastname" placeholder="Segundo Apellido" required>
+                </div>
+
+                <div class="row">
+                    <input type="text" id="celular" placeholder="Celular (8 dígitos)" required>
+                </div>
+
+                <button type="submit" class="btn-registrar">
+                    <i class="fas fa-save"></i> Guardar Cliente
+                </button>
+            </form>
+        </section>
+
+        <!-- LISTA CLIENTES -->
+        <section class="clientes-lista">
+            <h2>Clientes Registrados</h2>
+
+            <input type="text" id="buscar" placeholder="Buscar cliente..." class="input-buscar">
+
+            <table id="tablaClientes">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Completo</th>
+                        <th>Celular</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <script src="JS/client.js"></script>
+</body>
+
+</html>

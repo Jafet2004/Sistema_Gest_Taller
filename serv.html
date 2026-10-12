@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Servicios - Taller Rostrán</title>
+
+    <link rel="stylesheet" href="Estilos/serv.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1><i class="fas fa-tools"></i> Gestión de Servicios</h1>
+        <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+    </header>
+
+    <main>
+
+        <!-- FORMULARIO -->
+        <section class="form-container">
+            <h2>Registrar Servicio</h2>
+
+            <form id="formServicio">
+
+    <div class="row">
+        <input type="text" id="Name_trabajo" placeholder="Nombre del Servicio" required>
+        <input type="text" id="Detalle_trab" placeholder="Detalle del Servicio" required>
+    </div>
+
+    <!-- COMPRA EXTERNA -->
+    <div class="row">
+        <label>
+            <input type="checkbox" id="Compra_Externa">
+            Requiere compra externa
+        </label>
+        <input type="number" id="Costo_Compra" placeholder="Costo compra externa" disabled>
+    </div>
+
+    <!-- EXISTENCIA -->
+    <div class="row">
+        <label>
+            <input type="checkbox" id="Usa_Existencia">
+            Usa existencia del taller
+        </label>
+        <input type="number" id="Costo_Existencia" placeholder="Costo existencia" disabled>
+    </div>
+
+    <!-- MANO DE OBRA -->
+    <div class="row">
+        <label>
+            <input type="checkbox" id="Mano_Obra">
+            Incluye mano de obra
+        </label>
+        <input type="number" id="Costo_Mano_Obra" placeholder="Costo mano de obra" disabled>
+    </div>
+
+    <div class="row">
+        <input type="text" id="Total" placeholder="Total C$ (calculado automáticamente)" readonly>
+    </div>
+
+    <button type="submit" class="btn-registrar">
+        <i class="fas fa-save"></i> Guardar Servicio
+    </button>
+
+</form>
+
+
+
+        </section>
+
+        <!-- LISTA DE TRABAJOS -->
+        <section class="serv-lista">
+            <h2>Servicios Registrados</h2>
+
+            <input type="text" id="buscar" placeholder="Buscar servicio..." class="input-buscar">
+
+            <table id="tablaServicios">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Servicio</th>
+                        <th>Información de Servicio</th>
+                        <th>Precio</th>
+                        <th class="CRUD">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <script src="JS/serv.js"></script>
+</body>
+
+</html>

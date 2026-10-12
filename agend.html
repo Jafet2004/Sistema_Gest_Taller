@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Agenda</title>
+
+    <link rel="stylesheet" href="Estilos/agend.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="header">
+    <h1><i class="fas fa-calendar-alt"></i> Agenda de Citas</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+</header>
+
+<main>
+
+    <!-- FORMULARIO -->
+    <section class="form-container">
+        <h2>Registrar Cita</h2>
+        <form id="formCita">
+            <div class="row">
+                <select id="cliente" required></select>
+                <select id="trabajo" required></select>
+            </div>
+            <div class="row">
+                <input type="datetime-local" id="fecha_hora" required>
+            </div>
+            <div class="row">
+                <input type="text" id="descripcion" placeholder="Descripción" required>
+            </div>
+            <button type="submit" class="btn-registrar">
+                <i class="fas fa-save"></i> Guardar Cita
+            </button>
+        </form>
+    </section>
+
+    <!-- TABLA DE CITAS -->
+    <section class="clientes-lista">
+        <h2>Citas Registradas</h2>
+        <input type="text" id="buscar" placeholder="Buscar cita..." class="input-buscar">
+        <table id="tablaCitas">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Trabajo</th>
+                    <th>Fecha y Hora</th>
+                    <th>Descripción</th>
+                    <th class="CRUD">Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+</main>
+
+<script src="JS/agend.js"></script>
+</body>
+</html>

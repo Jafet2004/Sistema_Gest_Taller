@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Trabajadores</title>
+    <link rel="stylesheet" href="Estilos/trab.css">
+</head>
+<body>
+
+<header class="header">
+    <h1>Gestión de Trabajadores</h1>
+    <a href="index.html" class="btn-volver">Volver</a>
+</header>
+
+<main>
+
+    <!-- FORMULARIO -->
+    <div class="form-container">
+        <h2>Registrar Trabajador</h2>
+
+        <div class="row">
+            <input type="text" id="pr_name" placeholder="Primer Nombre">
+            <input type="text" id="sc_name" placeholder="Segundo Nombre">
+        </div>
+
+        <div class="row">
+            <input type="text" id="pr_lastname" placeholder="Primer Apellido">
+            <input type="text" id="sc_lastname" placeholder="Segundo Apellido">
+        </div>
+
+        <div class="row">
+            <input type="text" id="celular" placeholder="Celular">
+        </div>
+
+        <button class="btn-registrar" onclick="registrarTrabajador()">Registrar</button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="trab-lista">
+        <h2>Lista de Trabajadores</h2>
+
+        <input type="text" id="buscar" class="input-buscar" placeholder="Buscar..." onkeyup="filtrarTabla()">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombres</th>
+                    <th>Apellidos</th>
+                    <th>Celular</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-trabajadores"></tbody>
+        </table>
+    </div>
+
+</main>
+
+<script src="JS/trabajadores.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Buscar Vehículo por Chasis - Gestión de Vehículos</title>
+    <link rel="stylesheet" href="Estilos/view_car.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-content">
+            <h1><i class="fas fa-car"></i> Buscar Vehículo por Chasis</h1>
+            <div class="header-buttons">
+                <a href="gest_veh.html" class="btn-volver">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- BÚSQUEDA POR CHASIS -->
+    <div class="panel buscar-panel">
+        <h2><i class="fas fa-search"></i> Buscar Vehículo</h2>
+        <div class="buscar-container">
+            <div class="buscar-input-group">
+                <input type="text" id="input-chasis" placeholder="Ingrese el número de chasis (máx. 16 caracteres)" maxlength="16">
+                <button id="btn-buscar" class="btn-buscar">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+            <div id="mensaje-busqueda" class="mensaje"></div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL VEHÍCULO (OCULTO INICIALMENTE) -->
+    <div id="detalles-vehiculo" style="display: none;">
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-info-circle"></i> Información del Vehículo</h2>
+                <div class="acciones-header">
+                    <button id="btn-editar" class="btn-editar">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button id="btn-guardar" class="btn-guardar" style="display: none;">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                    <button id="btn-cancelar" class="btn-cancelar" style="display: none;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+            <div id="mensaje" class="mensaje"></div>
+            
+            <div class="info-grid" id="info-vehiculo">
+                <div class="info-item">
+                    <label>ID:</label>
+                    <div class="valor" id="id_Vehic">-</div>
+                    <input type="text" id="id_Vehic_input" style="display: none;" disabled>
+                </div>
+                
+                <div class="info-item">
+                    <label>Marca:</label>
+                    <div class="valor" id="Marca">-</div>
+                    <input type="text" id="Marca_input" style="display: none;" maxlength="50">
+                </div>
+                
+                <div class="info-item">
+                    <label>Modelo:</label>
+                    <div class="valor" id="Modelo">-</div>
+                    <input type="text" id="Modelo_input" style="display: none;" maxlength="50">
+                </div>
+                
+                <div class="info-item">
+                    <label>Año:</label>
+                    <div class="valor" id="Año">-</div>
+                    <input type="text" id="Año_input" style="display: none;" pattern="\d{4}" maxlength="4">
+                </div>
+                
+                <div class="info-item">
+                    <label>Número de Chasis:</label>
+                    <div class="valor" id="Numero_chasis">-</div>
+                    <input type="text" id="Numero_chasis_input" style="display: none;" maxlength="16">
+                </div>
+                
+                <div class="info-item">
+                    <label>Cliente:</label>
+                    <div class="valor" id="Cliente">-</div>
+                    <select id="id_client_select" style="display: none;"></select>
+                </div>
+                
+                <div class="info-item">
+                    <label>Trabajo:</label>
+                    <div class="valor" id="Trabajo">-</div>
+                    <select id="id_trabajo_select" style="display: none;"></select>
+                </div>
+                
+                <div class="info-item">
+                    <label>Fecha de Entrada:</label>
+                    <div class="valor" id="Entrada">-</div>
+                </div>
+                
+                <div class="info-item">
+                    <label>Fecha de Salida:</label>
+                    <div class="valor" id="Salida">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GALERÍA DE IMÁGENES -->
+        <div class="panel">
+            <h2><i class="fas fa-images"></i> Galería de Imágenes</h2>
+            
+            <div class="imagenes-container" id="galeria-imagenes">
+                <div class="sin-imagenes">
+                    <i class="fas fa-image"></i>
+                    <p>No hay imágenes disponibles</p>
+                </div>
+            </div>
+            
+            <!-- AGREGAR NUEVAS IMÁGENES (SOLO EN MODO EDICIÓN) -->
+            <div class="agregar-imagenes" id="agregar-imagenes" style="display: none;">
+                <h3><i class="fas fa-plus-circle"></i> Agregar Nuevas Imágenes</h3>
+                <p>Puedes agregar nuevas imágenes de entrada o salida</p>
+                
+                <div class="file-input-container">
+                    <label for="nuevasImagenes" class="file-input-label">
+                        <i class="fas fa-upload"></i> Seleccionar Imágenes
+                    </label>
+                    <input type="file" id="nuevasImagenes" accept="image/*" multiple>
+                    
+                    <select id="tipoImagen" style="margin-left: 15px; padding: 10px; border-radius: 6px;">
+                        <option value="entrada">Imágenes de Entrada</option>
+                        <option value="salida">Imágenes de Salida</option>
+                    </select>
+                </div>
+                
+                <div class="nuevas-imagenes-preview" id="nuevas-imagenes-preview"></div>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE CAMBIOS -->
+        <div class="panel">
+            <h2><i class="fas fa-history"></i> Historial</h2>
+            <div id="historial">
+                <div class="historial-item">
+                    <h4>Registro Inicial</h4>
+                    <p><strong>Fecha:</strong> <span id="fecha-entrada-h">-</span></p>
+                    <p><strong>Estado:</strong> Vehículo ingresado al sistema</p>
+                </div>
+                
+                <div id="historial-salida" style="display: none;">
+                    <div class="historial-item">
+                        <h4>Registro de Salida</h4>
+                        <p><strong>Fecha:</strong> <span id="fecha-salida-h">-</span></p>
+                        <p><strong>Estado:</strong> Vehículo entregado al cliente</p>
+                    </div>
+                </div>
+                
+                <div id="historial-cambios">
+                    <!-- Los cambios se agregarán aquí dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="JS/view_car.js"></script>
+</body>
+</html>
