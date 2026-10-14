@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // ======================
 app.use(cors({
-    origin: "*", // Permitir todas las fuentes para desarrollo
+    origin: true, // Refleja el origen real de la petición (obligatorio cuando credentials: true)
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // TODOS los métodos usados
     credentials: true
 }));
@@ -27,6 +27,7 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         secure: false,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
@@ -387,10 +388,12 @@ app.get("/vehiculos", (req, res) => {
     const sql = `
         SELECT v.*, 
                c.pr_name, c.sc_name, c.pr_lastname, c.sc_lastname, 
-               t.Name_trabajo
+               t.Name_trabajo,
+               tr.pr_name AS trab_pr_name, tr.pr_lastname AS trab_pr_lastname
         FROM Vehiculos v
         LEFT JOIN Clientes c ON v.id_client = c.id_client
         LEFT JOIN List_Trabajo t ON v.id_trabajo = t.id_trabajo
+        LEFT JOIN Trabajador tr ON v.id_trab = tr.id_trab
         ORDER BY v.id_Vehic DESC
     `;
     
@@ -412,10 +415,12 @@ app.get("/vehiculos/:id", (req, res) => {
                c.pr_name, c.sc_name, c.pr_lastname, c.sc_lastname, 
                c.id_client,
                t.Name_trabajo,
-               t.id_trabajo
+               t.id_trabajo,
+               tr.pr_name AS trab_pr_name, tr.pr_lastname AS trab_pr_lastname
         FROM Vehiculos v
         LEFT JOIN Clientes c ON v.id_client = c.id_client
         LEFT JOIN List_Trabajo t ON v.id_trabajo = t.id_trabajo
+        LEFT JOIN Trabajador tr ON v.id_trab = tr.id_trab
         WHERE v.id_Vehic = ?
     `;
     
@@ -531,11 +536,11 @@ app.post("/vehiculos", (req, res) => {
 
 // 4. PUT REGISTRAR SALIDA (CORREGIDO)
 app.put("/vehiculos/salida/:id", (req, res) => {
-    const { Salida, foto_out } = req.body;
+    const { Salida, foto_out, id_trab } = req.body;
     const { id } = req.params;
 
     console.log('Datos de salida recibidos:', {
-        id, Salida,
+        id, Salida, id_trab,
         tieneFotosSalida: !!foto_out,
         tipoFotosSalida: typeof foto_out
     });
@@ -560,11 +565,11 @@ app.put("/vehiculos/salida/:id", (req, res) => {
 
     const sql = `
         UPDATE Vehiculos 
-        SET Salida = ?, foto_out = ? 
+        SET Salida = ?, foto_out = ? , id_trab = ?
         WHERE id_Vehic = ?
     `;
     
-    db.query(sql, [Salida, fotosOutString, id], (err, result) => {
+    db.query(sql, [Salida, fotosOutString, id_trab, id], (err, result) => {
         if (err) {
             console.error('Error en PUT /vehiculos/salida/:id:', err);
             return res.status(500).json({ error: err.message });
@@ -582,7 +587,7 @@ app.put("/vehiculos/salida/:id", (req, res) => {
 // 5. PUT ACTUALIZAR VEHÍCULO (NUEVO para modal de edición)
 app.put("/vehiculos/:id", (req, res) => {
     const { id } = req.params;
-    const { Marca, Modelo, Año, Numero_chasis, id_client, id_trabajo } = req.body;
+    const { Marca, Modelo, Año, Numero_chasis, id_client, id_trabajo, id_trab } = req.body;
     
     console.log('Datos para actualizar vehículo ID:', id, req.body);
     
@@ -596,13 +601,13 @@ app.put("/vehiculos/:id", (req, res) => {
     const sql = `
         UPDATE Vehiculos 
         SET Marca = ?, Modelo = ?, Año = ?, Numero_chasis = ?,
-            id_client = ?, id_trabajo = ?
+            id_client = ?, id_trabajo = ?, id_trab = ?
         WHERE id_Vehic = ?
     `;
     
     db.query(sql, [
         Marca, Modelo, Año, Numero_chasis,
-        id_client, id_trabajo, id
+        id_client, id_trabajo, id_trab, id
     ], (err, result) => {
         if (err) {
             console.error('Error en PUT /vehiculos/:id:', err);
@@ -792,6 +797,25 @@ app.get("/notificaciones/citas-proximas", (req, res) => {
 // =========================================================
 
 // Obtener todos los reportes
+app.get("/reportes", (req, res) => {
+    const sql = `
+        SELECT r.*,
+               c.pr_name, c.pr_lastname,
+               v.Marca, v.Modelo,
+               t.Name_trabajo
+        FROM Reporte_Vehiculo r
+        JOIN Clientes c ON c.id_client = r.id_client
+        JOIN Vehiculos v ON v.id_Vehic = r.id_Vehic
+        JOIN List_Trabajo t ON t.id_trabajo = r.id_trabajo
+        ORDER BY r.fecha_reporte DESC
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json(err);
+        res.json(results);
+    });
+});
+
 // Obtener un reporte por ID
 app.get("/reportes/:id", (req, res) => {
     const { id } = req.params;
@@ -1057,7 +1081,10 @@ app.get("/dashboard/resumen-dia", (req, res) => {
             (SELECT COUNT(*) FROM Vehiculos WHERE DATE(Entrada) = ?) as vehiculos_hoy,
             (SELECT COUNT(*) FROM Vehiculos WHERE Salida IS NULL) as vehiculos_en_taller,
             (SELECT COUNT(*) FROM Agenda WHERE DATE(fecha_hora) = ?) as citas_hoy,
-            (SELECT COALESCE(SUM(Total), 0) FROM List_Trabajo WHERE DATE(fecha_creacion) = ?) as ingresos_hoy
+            (SELECT COALESCE(SUM(t.Total), 0)
+                FROM Vehiculos v
+                JOIN List_Trabajo t ON t.id_trabajo = v.id_trabajo
+                WHERE DATE(v.Salida) = ?) as ingresos_hoy
     `;
     
     db.query(query, [hoy, hoy, hoy], (err, results) => {
@@ -1076,5 +1103,5 @@ app.get("/dashboard/resumen-dia", (req, res) => {
 // INICIO DEL SERVIDOR
 // =========================================================
 app.listen(PORT, () => {
-    console.log(`🚗 Servidor Taller corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor Taller corriendo en http://localhost:${PORT}`);
 });
