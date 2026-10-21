@@ -1,6 +1,9 @@
 // Variables globales para los gráficos
 let vehiculosChart, marcasChart, clientesChart;
 
+// Backend corre en un puerto distinto al de Live Server / servidor estático
+const API_BASE = "http://localhost:3000";
+
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
@@ -17,11 +20,11 @@ async function loadDashboardData() {
         
         // Intentar cargar con los endpoints nuevos primero
         const [estadisticasRes, vehiculosRes] = await Promise.all([
-            fetch('/dashboard/estadisticas').then(res => {
+            fetch(`${API_BASE}/dashboard/estadisticas`).then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.json();
             }),
-            fetch('/dashboard/vehiculos-recientes').then(res => {
+            fetch(`${API_BASE}/dashboard/vehiculos-recientes`).then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.json();
             })
@@ -40,7 +43,7 @@ async function loadDashboardData() {
         
         // Cargar resumen del día
         try {
-            const resumenDia = await fetch('/dashboard/resumen-dia').then(res => res.json());
+            const resumenDia = await fetch(`${API_BASE}/dashboard/resumen-dia`).then(res => res.json());
             if (resumenDia && resumenDia.vehiculos_hoy !== undefined) {
                 mostrarResumenDia(resumenDia);
             }
@@ -291,10 +294,10 @@ async function loadDashboardFallback() {
         console.log("⚠️ Usando modo fallback...");
         
         const [clientesRes, vehiculosRes, trabajadoresRes, inventarioRes] = await Promise.all([
-            fetch('/clientes').then(res => res.json()).catch(() => []),
-            fetch('/vehiculos').then(res => res.json()).catch(() => []),
-            fetch('/trabajadores').then(res => res.json()).catch(() => []),
-            fetch('/inventario').then(res => res.json()).catch(() => [])
+            fetch(`${API_BASE}/clientes`).then(res => res.json()).catch(() => []),
+            fetch(`${API_BASE}/vehiculos`).then(res => res.json()).catch(() => []),
+            fetch(`${API_BASE}/trabajadores`).then(res => res.json()).catch(() => []),
+            fetch(`${API_BASE}/inventario`).then(res => res.json()).catch(() => [])
         ]);
 
         // Procesar datos manualmente
@@ -325,7 +328,7 @@ async function loadDashboardFallback() {
 // Cargar notificaciones
 async function loadNotifications() {
     try {
-        const response = await fetch('/notificaciones/citas-proximas');
+        const response = await fetch(`${API_BASE}/notificaciones/citas-proximas`);
         if (!response.ok) throw new Error('Error en notificaciones');
         
         const citas = await response.json();

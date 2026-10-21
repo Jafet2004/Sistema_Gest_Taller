@@ -37,7 +37,7 @@ async function cargarSelects() {
         });
 
     } catch (error) {
-        alert("Error cargando información de selects");
+        notificarSistema("Error cargando información de selects", 'error');
         console.error(error);
     }
 }
@@ -52,7 +52,7 @@ async function cargarCitas() {
         mostrarCitas(citas);
     } catch (error) {
         console.error(error);
-        alert("Error cargando citas");
+        notificarSistema("Error cargando citas", 'error');
     }
 }
 
@@ -126,7 +126,7 @@ form.addEventListener("submit", async (e) => {
         }
 
         const data = await res.json();
-        alert(data.message);
+        notificarSistema(data.message, 'exito');
 
         form.reset();
         editMode = false;
@@ -136,7 +136,7 @@ form.addEventListener("submit", async (e) => {
         cargarCitas();
 
     } catch (error) {
-        alert("Error al guardar");
+        notificarSistema("Error al guardar", 'error');
         console.error(error);
     }
 });
@@ -145,15 +145,16 @@ form.addEventListener("submit", async (e) => {
 // ELIMINAR CITA
 // =========================
 async function eliminarCita(id) {
-    if (!confirm("¿Eliminar cita?")) return;
+    const confirmado = await confirmarSistema("¿Eliminar esta cita?", "Eliminar cita");
+    if (!confirmado) return;
 
     try {
         const res = await fetch(`${API}/agenda/${id}`, { method: "DELETE" });
         const data = await res.json();
-        alert(data.message);
+        notificarSistema(data.message, 'exito');
         cargarCitas();
     } catch (error) {
-        alert("Error eliminando");
+        notificarSistema("Error eliminando", 'error');
         console.error(error);
     }
 }
@@ -179,7 +180,7 @@ async function editarCita(id) {
         btnSubmit.innerHTML = `<i class="fas fa-edit"></i> Actualizar Cita`;
 
     } catch (error) {
-        alert("Error cargando cita");
+        notificarSistema("Error cargando cita", 'error');
         console.error(error);
     }
 }
