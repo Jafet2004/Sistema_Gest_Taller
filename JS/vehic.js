@@ -1,691 +1,242 @@
-const API = "http://localhost:3000/vehiculos";
-let vehiculoEditando = null;
-let modoEdicion = false;
+// =========================================================
+// CLIENTES Y VEHÍCULOS
+// Flujo: 1) buscar/crear cliente → 2) ver/registrar sus vehículos
+//        → 3) "Ingresar al taller" abre ordenes.html?vehiculo=ID
+// =========================================================
+const API = "http://localhost:3000";
 
-// ==============================
-// FUNCIONES PARA MANEJAR FECHAS CORRECTAMENTE
-// ==============================
+let clienteActual = null;
+let vehiculos = [];
+let editandoVeh = null;
 
-function obtenerFechaHoraLocal() {
-    const ahora = new Date();
-    const offset = ahora.getTimezoneOffset();
-    const fechaLocal = new Date(ahora.getTime() - (offset * 60 * 1000));
-    const fechaStr = fechaLocal.toISOString().slice(0, 19).replace("T", " ");
-    return fechaStr;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const C = n => "C$ " + Number(n || 0).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fecha = s => s ? new Date(s).toLocaleDateString("es-NI") : "—";
+const nombre = c => `${c.pr_name} ${c.sc_name || ""} ${c.pr_lastname} ${c.sc_lastname || ""}`.replace(/\s+/g, " ").trim();
+const ESTADOS = { RECIBIDO: "Recibido", EN_PROCESO: "En proceso", TERMINADO: "Terminado", ENTREGADO: "Entregado", CANCELADO: "Cancelado" };
+
+async function api(ruta, opciones = {}) {
+    const res = await fetch(API + ruta, {
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        ...opciones,
+        body: opciones.body ? JSON.stringify(opciones.body) : undefined
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || data.error || "Error del servidor");
+    return data;
 }
 
-function formatearFechaLocal(fechaString) {
-    if (!fechaString) return 'N/A';
-    const fecha = new Date(fechaString);
-    return fecha.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    });
-}
-
-// ==============================
-// INICIALIZACIÓN
-// ==============================
-document.addEventListener('DOMContentLoaded', function() {
-    cargarClientes();
-    cargarTrabajos();
-    cargarVehiculos();
-    
-    // Limitar chasis a 16 caracteres
-    const chasisInput = document.getElementById('Numero_chasis');
-    chasisInput.addEventListener('input', function() {
-        if (this.value.length > 16) {
-            this.value = this.value.substring(0, 16);
-        }
-    });
-    
-    // Vista previa de imágenes
-    const fotoInput = document.getElementById('foto_int');
-    fotoInput.addEventListener('change', previewImages);
+// =========================================================
+// PASO 1: BUSCAR CLIENTE
+// =========================================================
+let timer;
+$("qCliente").addEventListener("input", e => {
+    clearTimeout(timer);
+    const q = e.target.value.trim();
+    if (q.length < 2) { $("resultados").innerHTML = ""; return; }
+    timer = setTimeout(() => buscarClientes(q), 250);   // espera a que deje de escribir
 });
 
-// ==============================
-// PREVIEW DE MÚLTIPLES IMÁGENES
-// ==============================
-function previewImages() {
-    const container = document.getElementById('preview-container');
-    container.innerHTML = '';
-    const files = this.files;
-    
-    if (files.length > 5) {
-        mostrarError('Máximo 5 imágenes permitidas');
-        this.value = '';
-        return;
-    }
-    
-    for (let i = 0; i < files.length; i++) {
-        const reader = new FileReader();
-        const file = files[i];
-        
-        reader.onload = function(e) {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'preview-img';
-            
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            
-            const removeBtn = document.createElement('span');
-            removeBtn.className = 'remove-img';
-            removeBtn.innerHTML = '×';
-            removeBtn.onclick = function() {
-                imgContainer.remove();
-            };
-            
-            imgContainer.appendChild(img);
-            imgContainer.appendChild(removeBtn);
-            container.appendChild(imgContainer);
-        };
-        
-        reader.readAsDataURL(file);
-    }
-}
-
-// ==============================
-// CARGAR CLIENTES Y TRABAJOS
-// ==============================
-async function cargarClientes() {
+async function buscarClientes(q) {
     try {
-        const res = await fetch("http://localhost:3000/clientes");
-        const data = await res.json();
-
-        const select = document.getElementById("id_client");
-        select.innerHTML = `<option value="">Seleccione Cliente *</option>`;
-        data.forEach(c => {
-            select.innerHTML += `<option value="${c.id_client}">${c.pr_name} ${c.sc_name} ${c.pr_lastname} ${c.sc_lastname}</option>`;
-        });
-    } catch (error) {
-        console.error('Error cargando clientes:', error);
-    }
+        const lista = await api(`/clientes/buscar?q=${encodeURIComponent(q)}`);
+        $("resultados").innerHTML = lista.length
+            ? lista.map(c => `
+                <button type="button" class="resultado" data-id="${c.id_client}">
+                    <span><strong>${esc(nombre(c))}</strong><small><i class="fas fa-phone"></i> ${esc(c.celular)}</small></span>
+                    <small>${c.total_vehiculos} vehículo(s) <i class="fas fa-chevron-right"></i></small>
+                </button>`).join("")
+            : `<p class="hint">Sin resultados para “${esc(q)}”.</p>`;
+        $("resultados").querySelectorAll("[data-id]").forEach(b =>
+            b.addEventListener("click", () => seleccionarCliente(lista.find(c => c.id_client == b.dataset.id))));
+    } catch (e) { notificarSistema(e.message, "error"); }
 }
 
-async function cargarTrabajos() {
+// Nuevo cliente desde aquí mismo
+$("lnkNuevoCliente").addEventListener("click", e => {
+    e.preventDefault();
+    $("formCliente").hidden = false;
+    // Si escribió un nombre en el buscador, lo usamos para prellenar
+    const partes = $("qCliente").value.trim().split(/\s+/);
+    if (partes[0] && isNaN(partes[0])) $("c_pr_name").value = partes[0];
+    if (partes[1]) $("c_pr_lastname").value = partes[1];
+    $("c_pr_name").focus();
+});
+$("btnCancelarCliente").addEventListener("click", () => { $("formCliente").reset(); $("formCliente").hidden = true; });
+
+$("formCliente").addEventListener("submit", async e => {
+    e.preventDefault();
+    const c = {
+        pr_name: $("c_pr_name").value.trim(), sc_name: $("c_sc_name").value.trim(),
+        pr_lastname: $("c_pr_lastname").value.trim(), sc_lastname: $("c_sc_lastname").value.trim(),
+        celular: $("c_celular").value.trim()
+    };
     try {
-        const res = await fetch("http://localhost:3000/trabajos");
-        const data = await res.json();
+        const r = await api("/clientes", { method: "POST", body: c });
+        notificarSistema("Cliente registrado", "exito");
+        e.target.reset(); e.target.hidden = true;
+        seleccionarCliente({ ...c, id_client: r.id_client });
+    } catch (err) { notificarSistema(err.message, "error"); }
+});
 
-        const select = document.getElementById("id_trabajo");
-        select.innerHTML = `<option value="">Seleccione Trabajo *</option>`;
-        data.forEach(t => {
-            select.innerHTML += `<option value="${t.id_trabajo}">${t.Name_trabajo}</option>`;
-        });
-    } catch (error) {
-        console.error('Error cargando trabajos:', error);
-    }
+// =========================================================
+// PASO 2: CLIENTE SELECCIONADO → SUS VEHÍCULOS
+// =========================================================
+async function seleccionarCliente(c) {
+    clienteActual = c;
+    history.replaceState(null, "", `?cliente=${c.id_client}`);   // permite volver/recargar
+    $("panelBuscar").hidden = true;
+    $("panelCliente").hidden = false;
+    $("avatar").textContent = (c.pr_name[0] + c.pr_lastname[0]).toUpperCase();
+    $("clienteNombre").textContent = nombre(c);
+    $("clienteCel").innerHTML = `<i class="fas fa-phone"></i> ${esc(c.celular)}`;
+    cancelarEdicionVeh();
+    await cargarVehiculos();
+    $("Marca").focus();
 }
 
-// ==============================
-// CONVERTIR FOTOS A BASE64
-// ==============================
-async function convertirImagenes(files) {
-    const imagenes = [];
-    for (let file of files) {
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-        imagenes.push(base64);
-    }
-    return imagenes;
-}
+$("btnCambiar").addEventListener("click", () => {
+    clienteActual = null;
+    history.replaceState(null, "", location.pathname);
+    $("panelCliente").hidden = true;
+    $("panelBuscar").hidden = false;
+    $("qCliente").select();
+});
 
-// ==============================
-// REGISTRAR VEHÍCULO (ENTRADA)
-// ==============================
-async function registrarVehiculo() {
-    try {
-        const Marca = document.getElementById("Marca").value.trim();
-        const Modelo = document.getElementById("Modelo").value.trim();
-        const Año = document.getElementById("Año").value.trim();
-        const Numero_chasis = document.getElementById("Numero_chasis").value.trim();
-        const id_client = document.getElementById("id_client").value;
-        const id_trabajo = document.getElementById("id_trabajo").value;
-
-        if (!Marca || !Modelo || !Numero_chasis || !id_client || !id_trabajo) {
-            mostrarError('Por favor complete todos los campos obligatorios (*)');
-            return;
-        }
-
-        if (Numero_chasis.length > 16) {
-            mostrarError('El número de chasis no puede exceder 16 caracteres');
-            return;
-        }
-
-        // Convertir múltiples imágenes
-        const archivos = document.getElementById("foto_int").files;
-        let foto_int = [];
-        if (archivos.length > 0) {
-            foto_int = await convertirImagenes(archivos);
-        }
-
-        const Entrada = obtenerFechaHoraLocal();
-
-        console.log('Enviando datos al servidor:', {
-            Marca, Modelo, Año, Numero_chasis,
-            id_client, id_trabajo,
-            tieneFotos: foto_int.length > 0
-        });
-
-        const response = await fetch(API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                Marca, Modelo, Año, Numero_chasis,
-                Entrada, id_client, id_trabajo, 
-                foto_int: JSON.stringify(foto_int)
-            })
-        });
-
-        const responseData = await response.json();
-        console.log('Respuesta del servidor:', responseData);
-
-        if (response.ok) {
-            limpiarFormulario();
-            mostrarError('', true);
-            cargarVehiculos();
-            alert('Vehículo registrado exitosamente. ' + 
-                  (foto_int.length > 0 ? 'Fotos guardadas correctamente.' : ''));
-        } else {
-            mostrarError(responseData.error || 'Error al registrar vehículo');
-        }
-    } catch (error) {
-        console.error('Error al registrar vehículo:', error);
-        mostrarError('Error al registrar vehículo: ' + error.message);
-    }
-}
-
-// ==============================
-// CARGAR TABLA CON CLICK PARA VER DETALLE
-// ==============================
 async function cargarVehiculos() {
     try {
-        const res = await fetch(API);
-        const data = await res.json();
+        vehiculos = await api(`/clientes/${clienteActual.id_client}/vehiculos`);
+    } catch (e) { notificarSistema(e.message, "error"); vehiculos = []; }
 
-        const tbody = document.getElementById("tabla-veh");
-        tbody.innerHTML = "";
-
-        data.forEach(v => {
-            const fila = document.createElement('tr');
-            fila.style.cursor = 'pointer';
-            fila.onclick = () => verDetalleVehiculo(v.id_Vehic);
-            
-            fila.innerHTML = `
-                <td>${v.id_Vehic}</td>
-                <td>${v.Marca} ${v.Modelo} ${v.Año ? `(${v.Año})` : ''}</td>
-                <td>${v.Numero_chasis}</td>
-                <td>${v.pr_name ? `${v.pr_name} ${v.sc_name || ''} ${v.pr_lastname || ''}` : 'N/A'}</td>
-                <td>${v.Name_trabajo || "N/A"}</td>
-                <td>${formatearFechaLocal(v.Entrada)}</td>
-                <td>${v.Salida ? formatearFechaLocal(v.Salida) : "Pendiente"}</td>
-                <td onclick="event.stopPropagation()">
-                    <button class="btn-salida" onclick="registrarSalida(${v.id_Vehic})" ${v.Salida ? "disabled" : ""}>
-                        <i class="fas fa-sign-out-alt"></i> Salida
-                    </button>
-                    <button class="btn-eliminar" onclick="eliminarVehiculo(${v.id_Vehic})">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(fila);
-        });
-    } catch (error) {
-        console.error('Error cargando vehículos:', error);
+    const cont = $("listaVehiculos");
+    if (!vehiculos.length) {
+        cont.innerHTML = `<p class="hint">Este cliente aún no tiene vehículos. Regístrelo abajo.</p>`;
+        return;
     }
-}
-
-// ==============================
-// VER DETALLE DEL VEHÍCULO (MODAL) CON EDICIÓN
-// ==============================
-async function verDetalleVehiculo(id) {
-    try {
-        const res = await fetch(`${API}/${id}`);
-        const vehiculo = await res.json();
-        
-        vehiculoEditando = vehiculo;
-        modoEdicion = false;
-        
-        let fotosEntrada = [];
-        let fotosSalida = [];
-        
-        // Procesar fotos de entrada
-        if (vehiculo.foto_int) {
-            if (typeof vehiculo.foto_int === 'string') {
-                try {
-                    fotosEntrada = JSON.parse(vehiculo.foto_int);
-                } catch (e) {
-                    fotosEntrada = [vehiculo.foto_int];
-                }
-            } else if (Array.isArray(vehiculo.foto_int)) {
-                fotosEntrada = vehiculo.foto_int;
-            }
-        }
-        
-        // Procesar fotos de salida
-        if (vehiculo.foto_out) {
-            if (typeof vehiculo.foto_out === 'string') {
-                try {
-                    fotosSalida = JSON.parse(vehiculo.foto_out);
-                } catch (e) {
-                    fotosSalida = [vehiculo.foto_out];
-                }
-            } else if (Array.isArray(vehiculo.foto_out)) {
-                fotosSalida = vehiculo.foto_out;
-            }
-        }
-        
-        const modal = document.getElementById('modal-vehiculo');
-        const contenido = document.getElementById('modal-contenido');
-        
-        contenido.innerHTML = `
-            <div class="detalle-vehiculo">
-                <h2>Detalle del Vehículo <span id="estado-edicion" style="font-size: 14px; color: #666;"></span></h2>
-                
-                <div class="detalle-grid" id="detalle-grid">
-                    <!-- Los datos se cargarán dinámicamente -->
-                </div>
-                
-                <h3>Imágenes de Entrada</h3>
-                <div class="galeria-imagenes" id="galeria-entrada">
-                    ${fotosEntrada.length > 0 ? 
-                        fotosEntrada.map((foto, index) => 
-                            `<img src="${foto}" alt="Imagen Entrada ${index + 1}" class="imagen-detalle">`
-                        ).join('') : 
-                        '<p>No hay imágenes de entrada</p>'
-                    }
-                </div>
-                
-                ${vehiculo.Salida ? `
-                <h3>Imágenes de Salida</h3>
-                <div class="galeria-imagenes" id="galeria-salida">
-                    ${fotosSalida.length > 0 ? 
-                        fotosSalida.map((foto, index) => 
-                            `<img src="${foto}" alt="Imagen Salida ${index + 1}" class="imagen-detalle">`
-                        ).join('') : 
-                        '<p>No hay imágenes de salida</p>'
-                    }
-                </div>
-                ` : ''}
-                
-                <div class="botones-modal">
-                    <button class="btn-editar" id="btn-editar-modal" onclick="activarEdicionModal()">
-                        <i class="fas fa-edit"></i> Editar Vehículo
-                    </button>
-                    <button class="btn-guardar" id="btn-guardar-modal" style="display: none;" onclick="guardarEdicionModal()">
-                        <i class="fas fa-save"></i> Guardar Cambios
-                    </button>
-                    <button class="btn-cancelar" id="btn-cancelar-modal" style="display: none;" onclick="cancelarEdicionModal()">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <button class="btn-cerrar" onclick="cerrarModal()">
-                        Cerrar
-                    </button>
-                </div>
+    cont.innerHTML = vehiculos.map(v => {
+        const enTaller = !!v.orden_activa;
+        return `
+        <article class="veh">
+            <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start">
+                <h4>${esc(v.Marca)} ${esc(v.Modelo)} ${v.Año ? `<small>(${esc(v.Año)})</small>` : ""}</h4>
+                ${enTaller
+                    ? `<span class="estado ${v.estado_orden}">En taller · ${ESTADOS[v.estado_orden]}</span>`
+                    : `<span class="estado DISPONIBLE">Fuera del taller</span>`}
             </div>
-        `;
-        
-        // Cargar los datos en el grid
-        cargarDatosEnModal(vehiculo);
-        
-        modal.style.display = 'block';
-    } catch (error) {
-        console.error('Error cargando detalle:', error);
-        mostrarError('Error al cargar los detalles del vehículo');
-    }
+            <div class="chasis">Chasis: ${esc(v.Numero_chasis)}</div>
+            <small class="hint">${v.visitas} visita(s) al taller</small>
+            <div class="botones">
+                ${enTaller
+                    ? `<a class="btn btn-rojo btn-mini" data-permiso="ordenes.ver_todas|ordenes.ver_propias" href="ordenes.html?orden=${v.orden_activa}"><i class="fas fa-clipboard-list"></i> Ver orden #${v.orden_activa}</a>`
+                    : `<a class="btn btn-rojo btn-mini" data-permiso="ordenes.crear" href="ordenes.html?vehiculo=${v.id_Vehic}"><i class="fas fa-right-to-bracket"></i> Ingresar al taller</a>`}
+                <button class="btn btn-gris btn-mini" data-hist="${v.id_Vehic}"><i class="fas fa-clock-rotate-left"></i> Historial</button>
+                <button class="btn-icon" title="Editar" data-permiso="clientes.editar" data-edit="${v.id_Vehic}"><i class="fas fa-pen"></i></button>
+                <button class="btn-icon" title="Eliminar" data-permiso="clientes.editar" data-del="${v.id_Vehic}"><i class="fas fa-trash"></i></button>
+            </div>
+        </article>`;
+    }).join("");
 }
 
-// ==============================
-// CARGAR DATOS EN EL MODAL (con funcionalidad de edición)
-// ==============================
-async function cargarDatosEnModal(vehiculo) {
-    const detalleGrid = document.getElementById('detalle-grid');
-    
-    // Obtener listas actualizadas para los selects
-    let clientesHTML = '<option value="">Seleccione cliente</option>';
-    let trabajosHTML = '<option value="">Seleccione trabajo</option>';
-    
-    try {
-        const [resClientes, resTrabajos] = await Promise.all([
-            fetch("http://localhost:3000/clientes"),
-            fetch("http://localhost:3000/trabajos")
-        ]);
-        
-        const clientes = await resClientes.json();
-        const trabajos = await resTrabajos.json();
-        
-        clientes.forEach(c => {
-            const selected = vehiculo.id_client == c.id_client ? 'selected' : '';
-            clientesHTML += `<option value="${c.id_client}" ${selected}>${c.pr_name} ${c.sc_name || ''} ${c.pr_lastname || ''} ${c.sc_lastname || ''}</option>`;
-        });
-        
-        trabajos.forEach(t => {
-            const selected = vehiculo.id_trabajo == t.id_trabajo ? 'selected' : '';
-            trabajosHTML += `<option value="${t.id_trabajo}" ${selected}>${t.Name_trabajo}</option>`;
-        });
-    } catch (error) {
-        console.error('Error cargando listas para edición:', error);
-    }
-    
-    detalleGrid.innerHTML = `
-        <div class="detalle-item">
-            <label>ID:</label>
-            <div class="valor" id="valor-id">${vehiculo.id_Vehic}</div>
-        </div>
-        
-        <div class="detalle-item">
-            <label>Marca:</label>
-            <div class="valor" id="valor-marca">${vehiculo.Marca || ''}</div>
-            <input type="text" id="input-marca" class="input-edicion" style="display: none;" 
-                   value="${vehiculo.Marca || ''}" maxlength="50">
-        </div>
-        
-        <div class="detalle-item">
-            <label>Modelo:</label>
-            <div class="valor" id="valor-modelo">${vehiculo.Modelo || ''}</div>
-            <input type="text" id="input-modelo" class="input-edicion" style="display: none;" 
-                   value="${vehiculo.Modelo || ''}" maxlength="50">
-        </div>
-        
-        <div class="detalle-item">
-            <label>Año:</label>
-            <div class="valor" id="valor-anio">${vehiculo.Año || ''}</div>
-            <input type="text" id="input-anio" class="input-edicion" style="display: none;" 
-                   value="${vehiculo.Año || ''}" pattern="\\d{4}" maxlength="4">
-        </div>
-        
-        <div class="detalle-item">
-            <label>Número de Chasis:</label>
-            <div class="valor" id="valor-chasis">${vehiculo.Numero_chasis || ''}</div>
-            <input type="text" id="input-chasis" class="input-edicion" style="display: none;" 
-                   value="${vehiculo.Numero_chasis || ''}" maxlength="16">
-        </div>
-        
-        <div class="detalle-item">
-            <label>Cliente:</label>
-            <div class="valor" id="valor-cliente">${vehiculo.pr_name || ''} ${vehiculo.pr_lastname || ''}</div>
-            <select id="select-cliente" class="select-edicion" style="display: none;">
-                ${clientesHTML}
-            </select>
-        </div>
-        
-        <div class="detalle-item">
-            <label>Trabajo:</label>
-            <div class="valor" id="valor-trabajo">${vehiculo.Name_trabajo || ''}</div>
-            <select id="select-trabajo" class="select-edicion" style="display: none;">
-                ${trabajosHTML}
-            </select>
-        </div>
-        
-        <div class="detalle-item">
-            <label>Fecha de Entrada:</label>
-            <div class="valor">${formatearFechaLocal(vehiculo.Entrada)}</div>
-        </div>
-        
-        <div class="detalle-item">
-            <label>Fecha de Salida:</label>
-            <div class="valor">${vehiculo.Salida ? formatearFechaLocal(vehiculo.Salida) : 'Pendiente'}</div>
-        </div>
-    `;
-    
-    // Agregar evento para limitar chasis en modo edición
-    const inputChasis = document.getElementById('input-chasis');
-    if (inputChasis) {
-        inputChasis.addEventListener('input', function() {
-            if (this.value.length > 16) {
-                this.value = this.value.substring(0, 16);
-            }
-        });
-    }
-}
+$("listaVehiculos").addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.hist) verHistorial(b.dataset.hist);
+    if (b.dataset.edit) editarVehiculo(b.dataset.edit);
+    if (b.dataset.del) eliminarVehiculo(b.dataset.del);
+});
 
-// ==============================
-// ACTIVAR MODO EDICIÓN EN MODAL
-// ==============================
-function activarEdicionModal() {
-    modoEdicion = true;
-    
-    // Cambiar estado
-    document.getElementById('estado-edicion').textContent = '(Modo Edición)';
-    document.getElementById('estado-edicion').style.color = '#ff9800';
-    
-    // Ocultar botón editar, mostrar guardar y cancelar
-    document.getElementById('btn-editar-modal').style.display = 'none';
-    document.getElementById('btn-guardar-modal').style.display = 'inline-flex';
-    document.getElementById('btn-cancelar-modal').style.display = 'inline-flex';
-    
-    // Ocultar valores, mostrar inputs
-    document.querySelectorAll('.valor').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.input-edicion').forEach(el => el.style.display = 'block');
-    document.querySelectorAll('.select-edicion').forEach(el => el.style.display = 'block');
-}
+// ---------- registrar / editar vehículo ----------
+$("Numero_chasis").addEventListener("input", e => e.target.value = e.target.value.toUpperCase());
 
-// ==============================
-// CANCELAR EDICIÓN EN MODAL
-// ==============================
-function cancelarEdicionModal() {
-    modoEdicion = false;
-    
-    // Restaurar estado
-    document.getElementById('estado-edicion').textContent = '';
-    
-    // Restaurar botones
-    document.getElementById('btn-editar-modal').style.display = 'inline-flex';
-    document.getElementById('btn-guardar-modal').style.display = 'none';
-    document.getElementById('btn-cancelar-modal').style.display = 'none';
-    
-    // Restaurar valores
-    document.querySelectorAll('.valor').forEach(el => el.style.display = 'block');
-    document.querySelectorAll('.input-edicion').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.select-edicion').forEach(el => el.style.display = 'none');
-}
-
-// ==============================
-// GUARDAR CAMBIOS EN MODAL
-// ==============================
-async function guardarEdicionModal() {
-    try {
-        if (!vehiculoEditando) {
-            mostrarErrorModal('No hay vehículo para editar');
-            return;
-        }
-        
-        // Obtener valores de los inputs
-        const Marca = document.getElementById('input-marca').value.trim();
-        const Modelo = document.getElementById('input-modelo').value.trim();
-        const Año = document.getElementById('input-anio').value.trim();
-        const Numero_chasis = document.getElementById('input-chasis').value.trim();
-        const id_client = document.getElementById('select-cliente').value;
-        const id_trabajo = document.getElementById('select-trabajo').value;
-        
-        // Validaciones
-        if (!Marca || !Modelo || !Numero_chasis || !id_client || !id_trabajo) {
-            mostrarErrorModal('Por favor complete todos los campos obligatorios');
-            return;
-        }
-        
-        if (Numero_chasis.length > 16) {
-            mostrarErrorModal('El número de chasis no puede exceder 16 caracteres');
-            return;
-        }
-        
-        if (Año && (Año.length !== 4 || isNaN(Año))) {
-            mostrarErrorModal('El año debe ser un número de 4 dígitos');
-            return;
-        }
-        
-        // Mostrar loading
-        document.getElementById('btn-guardar-modal').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        document.getElementById('btn-guardar-modal').disabled = true;
-        
-        console.log('Enviando actualización para vehículo ID:', vehiculoEditando.id_Vehic, {
-            Marca, Modelo, Año, Numero_chasis, id_client, id_trabajo
-        });
-        
-        const response = await fetch(`${API}/${vehiculoEditando.id_Vehic}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                Marca, Modelo, Año, Numero_chasis,
-                id_client, id_trabajo
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            alert('Vehículo actualizado exitosamente');
-            
-            // Actualizar los valores en pantalla
-            document.getElementById('valor-marca').textContent = Marca;
-            document.getElementById('valor-modelo').textContent = Modelo;
-            document.getElementById('valor-anio').textContent = Año;
-            document.getElementById('valor-chasis').textContent = Numero_chasis;
-            
-            // Actualizar cliente y trabajo (necesitaríamos recargar estos datos)
-            // Por ahora, cerramos el modo edición
-            cancelarEdicionModal();
-            
-            // Recargar la tabla principal
-            cargarVehiculos();
-            
-        } else {
-            throw new Error(result.error || 'Error al actualizar vehículo');
-        }
-        
-    } catch (error) {
-        console.error('Error guardando cambios:', error);
-        mostrarErrorModal('Error al guardar cambios: ' + error.message);
-    } finally {
-        // Restaurar botón
-        if (document.getElementById('btn-guardar-modal')) {
-            document.getElementById('btn-guardar-modal').innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-            document.getElementById('btn-guardar-modal').disabled = false;
-        }
-    }
-}
-
-// ==============================
-// REGISTRAR SALIDA
-// ==============================
-async function registrarSalida(id) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.multiple = true;
-    input.click();
-
-    input.onchange = async () => {
-        const files = input.files;
-        if (files.length === 0) return;
-        
-        try {
-            // Convertir imágenes de salida
-            const foto_out = await convertirImagenes(files);
-            
-            const Salida = obtenerFechaHoraLocal();
-            console.log('Registrando salida para vehículo ID:', id, 'con', foto_out.length, 'fotos');
-
-            const response = await fetch(`${API}/salida/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    Salida, 
-                    foto_out: JSON.stringify(foto_out) 
-                })
-            });
-
-            const result = await response.json();
-            console.log('Respuesta de salida:', result);
-
-            if (response.ok) {
-                cargarVehiculos();
-                alert('Salida registrada exitosamente. ' + 
-                      (foto_out.length > 0 ? 'Fotos guardadas correctamente.' : ''));
-            } else {
-                mostrarError(result.error || 'Error al registrar salida');
-            }
-        } catch (error) {
-            console.error('Error al registrar salida:', error);
-            mostrarError('Error al registrar salida: ' + error.message);
-        }
+$("formVehiculo").addEventListener("submit", async e => {
+    e.preventDefault();
+    const v = {
+        id_client: clienteActual.id_client,
+        Marca: $("Marca").value.trim(),
+        Modelo: $("Modelo").value.trim(),
+        Año: $("Anio").value.trim(),
+        Numero_chasis: $("Numero_chasis").value.trim()
     };
-}
-
-// ==============================
-// FUNCIONES AUXILIARES
-// ==============================
-function mostrarError(mensaje, esExito = false) {
-    const elemento = document.getElementById('mensaje-error');
-    if (elemento) {
-        elemento.textContent = mensaje;
-        elemento.className = esExito ? 'mensaje-exito' : 'mensaje-error';
-        
-        if (esExito) {
-            setTimeout(() => {
-                elemento.textContent = '';
-                elemento.className = '';
-            }, 3000);
+    try {
+        if (editandoVeh) {
+            await api(`/vehiculos/${editandoVeh}`, { method: "PUT", body: v });
+            notificarSistema("Vehículo actualizado", "exito");
+            cancelarEdicionVeh();
+            cargarVehiculos();
+            return;
         }
-    }
+        const r = await api("/vehiculos", { method: "POST", body: v });
+        e.target.reset();
+        await cargarVehiculos();
+        const ingresar = await confirmarSistema(
+            `${esc(v.Marca)} ${esc(v.Modelo)} quedó registrado a nombre de ${esc(nombre(clienteActual))}.<br><br>¿Desea ingresarlo al taller ahora?`,
+            "Vehículo registrado");
+        if (ingresar) location.href = `ordenes.html?vehiculo=${r.id_Vehic}`;
+    } catch (err) { notificarSistema(err.message, "error"); }
+});
+
+function editarVehiculo(id) {
+    const v = vehiculos.find(x => x.id_Vehic == id);
+    editandoVeh = v.id_Vehic;
+    $("Marca").value = v.Marca; $("Modelo").value = v.Modelo;
+    $("Anio").value = v.Año || ""; $("Numero_chasis").value = v.Numero_chasis;
+    $("tituloFormVeh").innerHTML = `<i class="fas fa-pen"></i> Editando ${esc(v.Marca)} ${esc(v.Modelo)}`;
+    $("btnGuardarVeh").innerHTML = `<i class="fas fa-save"></i> Guardar cambios`;
+    $("btnCancelarVeh").hidden = false;
+    $("Marca").focus();
 }
 
-function mostrarErrorModal(mensaje) {
-    alert(mensaje);
+function cancelarEdicionVeh() {
+    editandoVeh = null;
+    $("formVehiculo").reset();
+    $("tituloFormVeh").innerHTML = `<i class="fas fa-plus"></i> Registrar vehículo a este cliente`;
+    $("btnGuardarVeh").innerHTML = `<i class="fas fa-save"></i> Registrar vehículo`;
+    $("btnCancelarVeh").hidden = true;
+}
+$("btnCancelarVeh").addEventListener("click", cancelarEdicionVeh);
+
+async function eliminarVehiculo(id) {
+    if (!await confirmarSistema("¿Eliminar este vehículo? Solo es posible si nunca ha entrado al taller.", "Eliminar vehículo")) return;
+    try {
+        const r = await api(`/vehiculos/${id}`, { method: "DELETE" });
+        notificarSistema(r.message, "exito");
+        cargarVehiculos();
+    } catch (err) { notificarSistema(err.message, "error"); }
 }
 
-function limpiarFormulario() {
-    document.getElementById("Marca").value = '';
-    document.getElementById("Modelo").value = '';
-    document.getElementById("Año").value = '';
-    document.getElementById("Numero_chasis").value = '';
-    document.getElementById("id_client").selectedIndex = 0;
-    document.getElementById("id_trabajo").selectedIndex = 0;
-    document.getElementById("foto_int").value = '';
-    document.getElementById("preview-container").innerHTML = '';
+// ---------- historial ----------
+async function verHistorial(id) {
+    const v = vehiculos.find(x => x.id_Vehic == id);
+    $("histTitulo").textContent = `Historial — ${v.Marca} ${v.Modelo} (${v.Numero_chasis})`;
+    try {
+        const h = await api(`/vehiculos/${id}/historial`);
+        $("histBody").innerHTML = h.length ? h.map(o => `
+            <tr>
+                <td><a href="ordenes.html?orden=${o.id_orden}">#${o.id_orden}</a></td>
+                <td>${fecha(o.fecha_entrada)}</td>
+                <td>${fecha(o.fecha_salida)}</td>
+                <td>${esc(o.servicios || "—")}</td>
+                <td class="num">${C(o.total)}</td>
+                <td><span class="estado ${o.estado}">${ESTADOS[o.estado]}</span></td>
+            </tr>`).join("")
+            : `<tr><td colspan="6" class="vacio">Nunca ha entrado al taller</td></tr>`;
+        $("modalHist").hidden = false;
+    } catch (err) { notificarSistema(err.message, "error"); }
 }
+document.querySelectorAll("[data-cerrar]").forEach(b =>
+    b.addEventListener("click", () => b.closest(".modal").hidden = true));
 
-function cerrarModal() {
-    document.getElementById('modal-vehiculo').style.display = 'none';
-    vehiculoEditando = null;
-    modoEdicion = false;
-}
-
-function eliminarVehiculo(id) {
-    if (!confirm("¿Está seguro de eliminar este vehículo? Esta acción no se puede deshacer.")) return;
-    
-    fetch(`${API}/${id}`, { method: "DELETE" })
-        .then(response => {
-            if (response.ok) {
-                cargarVehiculos();
-                cerrarModal();
-                alert('Vehículo eliminado exitosamente');
-            } else {
-                return response.json().then(error => {
-                    throw new Error(error.error || 'Error al eliminar vehículo');
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error eliminando vehículo:', error);
-            mostrarError(error.message);
-        });
-}
-
-function filtrarTabla() {
-    const texto = document.getElementById("buscar").value.toLowerCase();
-    document.querySelectorAll("#tabla-veh tr").forEach(fila => {
-        const textoFila = fila.innerText.toLowerCase();
-        fila.style.display = textoFila.includes(texto) ? "" : "none";
-    });
-}
+// =========================================================
+// INICIO: si viene ?cliente=ID lo selecciona directamente
+// =========================================================
+(async () => {
+    const id = new URLSearchParams(location.search).get("cliente");
+    if (!id) { $("qCliente").focus(); return; }
+    try {
+        const todos = await api("/clientes");
+        const c = todos.find(x => x.id_client == id);
+        if (c) seleccionarCliente(c);
+    } catch (e) { notificarSistema(e.message, "error"); }
+})();

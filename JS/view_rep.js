@@ -1,10 +1,12 @@
 // ===============================
 // CONFIG
 // ===============================
-const API = "http://localhost:3000/reportes";
-const API_CLIENTES = "http://localhost:3000/clientes";
-const API_VEHICULOS = "http://localhost:3000/vehiculos";
-const API_TRABAJOS = "http://localhost:3000/trabajos";
+// Backend corre en un puerto distinto al de Live Server / servidor estático
+const API_BASE = "http://localhost:3000";
+const API = `${API_BASE}/reportes`;
+const API_CLIENTES = `${API_BASE}/clientes`;
+const API_VEHICULOS = `${API_BASE}/vehiculos`;
+const API_TRABAJOS = `${API_BASE}/trabajos`;
 
 // ===============================
 // ELEMENTOS
@@ -14,6 +16,13 @@ const btnCancelar = document.getElementById("btn-cancelar");
 const btnPrintAll = document.getElementById("btn-imprimir-lista");
 const btnRefrescar = document.getElementById("btn-refrescar");
 const btnText = document.getElementById("btn-text");
+
+const select_cliente = document.getElementById("select_cliente");
+const select_vehiculo = document.getElementById("select_vehiculo");
+const select_trabajo = document.getElementById("select_trabajo");
+const fecha_reporte = document.getElementById("fecha_reporte");
+const observaciones = document.getElementById("observaciones");
+const recomendaciones = document.getElementById("recomendaciones");
 
 let editMode = false;
 let editId = null;
@@ -74,7 +83,7 @@ async function cargarSelects() {
         trabajos.forEach(t => {
             selTrabajo.innerHTML += `
                 <option value="${t.id_trabajo}">
-                    ${t.Name_trabajo} - C$ ${t.Precio}
+                    ${t.Name_trabajo} - C$ ${t.Total}
                 </option>`;
         });
 
@@ -170,11 +179,16 @@ form.addEventListener("submit", async e => {
 
         if (!res.ok) throw new Error("Error al guardar");
 
+        const eraEdicion = editMode;
         resetForm();
         cargarReportes();
+        notificarSistema(
+            eraEdicion ? 'Reporte actualizado correctamente' : 'Reporte guardado correctamente',
+            'exito'
+        );
 
     } catch (err) {
-        alert("Error al guardar reporte");
+        notificarSistema("Error al guardar reporte", "error");
     }
 });
 
@@ -182,9 +196,11 @@ form.addEventListener("submit", async e => {
 // ELIMINAR
 // ===============================
 async function eliminarReporte(id) {
-    if (!confirm("¿Eliminar reporte?")) return;
+    const confirmado = await confirmarSistema("¿Eliminar este reporte?", "Eliminar reporte");
+    if (!confirmado) return;
     await fetch(`${API}/${id}`, { method: "DELETE" });
     cargarReportes();
+    notificarSistema("Reporte eliminado correctamente", "exito");
 }
 
 // ===============================
@@ -207,23 +223,88 @@ async function cargarReporteEditar(id) {
 }
 
 // ===============================
+// UTILIDAD: nombre de archivo seguro
+// ===============================
+function nombreArchivoReporte(r) {
+    const cliente = `${r.pr_name || ""} ${r.pr_lastname || ""}`.trim();
+    const vehiculo = `${r.Marca || ""} ${r.Modelo || ""}`.trim();
+    const base = `Reporte ${cliente} ${vehiculo}`.replace(/\s+/g, " ").trim();
+    // Elimina caracteres no permitidos en nombres de archivo
+    return base.replace(/[\\/:*?"<>|]/g, "") + ".pdf";
+}
+
+// ===============================
 // PDF INDIVIDUAL
 // ===============================
 async function imprimirReporte(id) {
     const r = await (await fetch(`${API}/${id}`)).json();
 
+    const fecha = r.fecha_reporte ? new Date(r.fecha_reporte) : new Date();
+    const fechaStr = fecha.toLocaleDateString("es-NI", {
+        day: "2-digit", month: "long", year: "numeric"
+    });
+
     const div = document.createElement("div");
+    div.style.cssText = "width:760px;padding:40px;font-family:'Segoe UI',Arial,sans-serif;color:#2b2b2b;";
     div.innerHTML = `
-        <h2>Reporte Vehículo</h2>
-        <p><strong>Cliente:</strong> ${r.pr_name} ${r.pr_lastname}</p>
-        <p><strong>Vehículo:</strong> ${r.Marca} ${r.Modelo}</p>
-        <p><strong>Trabajo:</strong> ${r.Name_trabajo}</p>
-        <p><strong>Fecha:</strong> ${new Date(r.fecha_reporte).toLocaleString()}</p>
-        <p><strong>Observaciones:</strong><br>${r.observaciones}</p>
-        <p><strong>Recomendaciones:</strong><br>${r.recomendaciones}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #b71c1c;padding-bottom:16px;margin-bottom:28px;">
+            <div>
+                <h1 style="margin:0;font-size:24px;color:#b71c1c;letter-spacing:0.5px;">TALLER ROSTRÁN</h1>
+                <p style="margin:4px 0 0;font-size:13px;color:#666;">Reporte de Servicio Vehicular</p>
+            </div>
+            <div style="text-align:right;font-size:12px;color:#666;">
+                <p style="margin:0;"><strong>Reporte #${r.id_reporte}</strong></p>
+                <p style="margin:2px 0 0;">${fechaStr}</p>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:20px;margin-bottom:24px;">
+            <div style="flex:1;background:#f8f8f8;border-radius:8px;padding:16px 20px;">
+                <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#b71c1c;font-weight:600;">Cliente</p>
+                <p style="margin:0;font-size:16px;font-weight:600;">${r.pr_name || ""} ${r.pr_lastname || ""}</p>
+            </div>
+            <div style="flex:1;background:#f8f8f8;border-radius:8px;padding:16px 20px;">
+                <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#b71c1c;font-weight:600;">Vehículo</p>
+                <p style="margin:0;font-size:16px;font-weight:600;">${r.Marca || ""} ${r.Modelo || ""}</p>
+            </div>
+        </div>
+
+        <div style="background:#f8f8f8;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+            <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#b71c1c;font-weight:600;">Trabajo Realizado</p>
+            <p style="margin:0;font-size:16px;font-weight:600;">${r.Name_trabajo || ""}</p>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#b71c1c;font-weight:600;">Observaciones</p>
+            <p style="margin:0;font-size:14px;line-height:1.6;border-left:3px solid #e0e0e0;padding-left:14px;white-space:pre-wrap;">${r.observaciones || "Sin observaciones."}</p>
+        </div>
+
+        <div style="margin-bottom:32px;">
+            <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#b71c1c;font-weight:600;">Recomendaciones</p>
+            <p style="margin:0;font-size:14px;line-height:1.6;border-left:3px solid #e0e0e0;padding-left:14px;white-space:pre-wrap;">${r.recomendaciones || "Sin recomendaciones."}</p>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:60px;">
+            <div style="text-align:center;width:220px;">
+                <div style="border-top:1px solid #999;padding-top:6px;font-size:12px;color:#666;">Firma del Técnico</div>
+            </div>
+            <div style="text-align:center;width:220px;">
+                <div style="border-top:1px solid #999;padding-top:6px;font-size:12px;color:#666;">Firma del Cliente</div>
+            </div>
+        </div>
+
+        <p style="margin-top:40px;font-size:10px;color:#aaa;text-align:center;">Documento generado por Taller Rostrán · ${new Date().toLocaleString("es-NI")}</p>
     `;
 
-    html2pdf().from(div).save(`reporte_${id}.pdf`);
+    const opciones = {
+        margin: 10,
+        filename: nombreArchivoReporte(r),
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    };
+
+    html2pdf().set(opciones).from(div).save();
 }
 
 // ===============================
@@ -232,18 +313,50 @@ async function imprimirReporte(id) {
 async function imprimirListaCompleta() {
     const data = await (await fetch(API)).json();
 
-    const div = document.createElement("div");
-    div.innerHTML = `<h2>Listado de Reportes</h2>`;
-
-    data.forEach(r => {
-        div.innerHTML += `
-            <hr>
-            <p><strong>ID:</strong> ${r.id_reporte}</p>
-            <p>${r.pr_name} ${r.pr_lastname} - ${r.Marca} ${r.Modelo}</p>
+    const filas = data.map(r => {
+        const fecha = r.fecha_reporte ? new Date(r.fecha_reporte).toLocaleDateString("es-NI") : "";
+        return `
+            <tr>
+                <td style="padding:10px 12px;border-bottom:1px solid #eee;">${r.id_reporte}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #eee;">${r.pr_name || ""} ${r.pr_lastname || ""}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #eee;">${r.Marca || ""} ${r.Modelo || ""}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #eee;">${r.Name_trabajo || ""}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #eee;">${fecha}</td>
+            </tr>
         `;
-    });
+    }).join("");
 
-    html2pdf().from(div).save("lista_reportes.pdf");
+    const div = document.createElement("div");
+    div.style.cssText = "width:760px;padding:40px;font-family:'Segoe UI',Arial,sans-serif;color:#2b2b2b;";
+    div.innerHTML = `
+        <div style="border-bottom:4px solid #b71c1c;padding-bottom:16px;margin-bottom:24px;">
+            <h1 style="margin:0;font-size:22px;color:#b71c1c;">TALLER ROSTRÁN</h1>
+            <p style="margin:4px 0 0;font-size:13px;color:#666;">Listado de Reportes de Vehículos</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+                <tr style="background:#b71c1c;color:#fff;">
+                    <th style="padding:10px 12px;text-align:left;">ID</th>
+                    <th style="padding:10px 12px;text-align:left;">Cliente</th>
+                    <th style="padding:10px 12px;text-align:left;">Vehículo</th>
+                    <th style="padding:10px 12px;text-align:left;">Trabajo</th>
+                    <th style="padding:10px 12px;text-align:left;">Fecha</th>
+                </tr>
+            </thead>
+            <tbody>${filas}</tbody>
+        </table>
+        <p style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;">Generado por Taller Rostrán · ${new Date().toLocaleString("es-NI")}</p>
+    `;
+
+    const opciones = {
+        margin: 10,
+        filename: `Listado de Reportes ${new Date().toLocaleDateString("es-NI").replace(/\//g, "-")}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    };
+
+    html2pdf().set(opciones).from(div).save();
 }
 
 // ===============================

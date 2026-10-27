@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compras y Proveedores - Taller Rostrán</title>
+    <link rel="stylesheet" href="Estilos/sistema.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-permisos="compras.ver">
+
+<header class="header">
+    <h1><i class="fas fa-truck"></i> Compras y Proveedores</h1>
+    <a href="gest_invt.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Inventario</a>
+</header>
+
+<main>
+<section class="card">
+    <div class="tabs">
+        <button class="tab activo" data-tab="reabastecer"><i class="fas fa-triangle-exclamation"></i> Reabastecer <span class="contador" id="cntSug" hidden></span></button>
+        <button class="tab" data-tab="pedidos"><i class="fas fa-file-invoice"></i> Pedidos de compra <span class="contador" id="cntAbiertas" hidden></span></button>
+        <button class="tab" data-tab="proveedores"><i class="fas fa-handshake"></i> Proveedores</button>
+    </div>
+
+    <!-- ========== REABASTECER ========== -->
+    <div id="panel-reabastecer">
+        <p class="hint">Repuestos en o por debajo del <b>stock mínimo</b>. La cantidad sugerida lleva el stock al doble del mínimo,
+            descontando lo que ya viene en pedidos abiertos. Ajuste cantidades y proveedor, y genere un pedido por proveedor.</p>
+        <div class="tabla-wrap">
+            <table class="tabla-edit">
+                <thead><tr><th><input type="checkbox" id="chkTodos" checked></th><th>Repuesto</th><th class="num">Stock</th><th class="num">Mínimo</th>
+                    <th class="num">En pedido</th><th>Proveedor</th><th class="num">Cantidad</th><th class="num">Costo est.</th><th class="num">Subtotal</th></tr></thead>
+                <tbody id="tablaSug"></tbody>
+            </table>
+        </div>
+        <div class="row acciones">
+            <span class="hint" id="totalSug" style="margin-right:auto"></span>
+            <button class="btn btn-gris" id="btnCompraDirecta" data-permiso="compras.editar"><i class="fas fa-plus"></i> Nueva compra</button>
+            <button class="btn btn-rojo" id="btnGenerar" data-permiso="compras.editar"><i class="fas fa-file-circle-plus"></i> Generar pedidos</button>
+        </div>
+    </div>
+
+    <!-- ========== PEDIDOS ========== -->
+    <div id="panel-pedidos" hidden>
+        <div class="filtros" id="filtrosCompra">
+            <button class="filtro activo" data-f="abiertas">Abiertos</button>
+            <button class="filtro" data-f="RECIBIDA">Recibidos</button>
+            <button class="filtro" data-f="CANCELADA">Cancelados</button>
+            <button class="filtro" data-f="todas">Todos</button>
+        </div>
+        <div class="tabla-wrap">
+            <table>
+                <thead><tr><th>#</th><th>Fecha</th><th>Proveedor</th><th class="num">Líneas</th><th class="num">Total</th><th>Factura</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="tablaCompras"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========== PROVEEDORES ========== -->
+    <div id="panel-proveedores" hidden>
+        <form id="formProv" data-permiso="compras.editar">
+            <div class="row">
+                <label class="campo grow"><span>Nombre *</span><input id="pv_nombre" maxlength="80" required></label>
+                <label class="campo"><span>Contacto</span><input id="pv_contacto" maxlength="60"></label>
+                <label class="campo"><span>Teléfono</span><input id="pv_telefono" maxlength="15"></label>
+            </div>
+            <div class="row">
+                <label class="campo"><span>Correo</span><input type="email" id="pv_email" maxlength="80"></label>
+                <label class="campo grow"><span>Dirección</span><input id="pv_direccion" maxlength="150"></label>
+                <button type="button" class="btn btn-gris" id="btnCancelarProv" hidden>Cancelar</button>
+                <button type="submit" class="btn btn-rojo" id="btnGuardarProv"><i class="fas fa-save"></i> Registrar proveedor</button>
+            </div>
+        </form>
+        <div class="tabla-wrap" style="margin-top:1rem">
+            <table>
+                <thead><tr><th>Proveedor</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th class="num">Repuestos</th><th class="num">Compras</th><th></th></tr></thead>
+                <tbody id="tablaProv"></tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</main>
+
+<!-- ========== MODAL PEDIDO / COMPRA ========== -->
+<div class="modal" id="modalCompra" hidden>
+    <div class="modal-caja ancho">
+        <div class="modal-head">
+            <div><h3 id="cTitulo">Nueva compra</h3><span class="estado" id="cEstado"></span></div>
+            <button class="cerrar-x" data-cerrar>&times;</button>
+        </div>
+
+        <div class="row" style="margin-top:.75rem">
+            <label class="campo grow"><span>Proveedor *</span><select id="cProveedor"></select></label>
+            <label class="campo grow"><span>Observaciones</span><input id="cObs" maxlength="255"></label>
+        </div>
+
+        <div class="seccion-modal">
+            <h4>Productos</h4>
+            <div class="tabla-wrap">
+                <table class="tabla-edit">
+                    <thead id="cHead"></thead>
+                    <tbody id="cItems"></tbody>
+                </table>
+            </div>
+            <div class="row" id="cAgregar" style="margin-top:.6rem">
+                <label class="campo grow"><span>Agregar repuesto</span><select id="cNuevoProd"></select></label>
+                <button class="btn btn-gris" id="btnAgregarLinea"><i class="fas fa-plus"></i> Agregar</button>
+            </div>
+        </div>
+
+        <!-- Recepción -->
+        <div class="seccion-modal" id="cRecepcion" hidden>
+            <h4><i class="fas fa-dolly"></i> Recibir en bodega</h4>
+            <p class="hint">Confirme cantidades y costos reales de la factura. El stock y el costo promedio se actualizan al recibir.</p>
+            <div class="row">
+                <label class="campo"><span>Nº de factura</span><input id="cFactura" maxlength="40"></label>
+                <label class="check-linea" data-permiso="compras.pagar"><input type="checkbox" id="cPagarCaja"> Pagar con la caja abierta</label>
+                <label class="campo" id="cMetodoCampo" hidden><span>Método</span>
+                    <select id="cMetodo"><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option></select></label>
+                <label class="campo" id="cRefCampo" hidden><span>Referencia</span><input id="cReferencia" maxlength="50"></label>
+            </div>
+        </div>
+
+        <div class="row acciones" id="cAcciones"></div>
+    </div>
+</div>
+
+<script src="JS/notificaciones.js"></script>
+<script src="JS/compras.js"></script>
+</body>
+</html>

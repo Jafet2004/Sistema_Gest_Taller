@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja - Taller Rostrán</title>
+
+    <link rel="stylesheet" href="Estilos/caja.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-permisos="caja.ver|caja.operar|caja.cxc">
+
+<header class="header">
+    <h1><i class="fas fa-cash-register"></i> Caja</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+</header>
+
+<main>
+
+    <!-- ================= ESTADO ================= -->
+    <section class="estado-caja" id="estadoCaja">
+        <div class="estado-badge" id="estadoBadge"><i class="fas fa-lock"></i> Caja cerrada</div>
+        <p class="estado-info" id="estadoInfo">Realice la apertura para comenzar a cobrar.</p>
+    </section>
+
+    <!-- ================= 1. APERTURA (visible si está cerrada) ================= -->
+    <section class="card" id="panelApertura" data-permiso="caja.operar">
+        <h2><span class="paso">1</span> Apertura de caja</h2>
+        <form id="formApertura" class="row">
+            <label class="campo">
+                <span>Fondo inicial (C$)</span>
+                <input type="number" id="monto_apertura" min="0" step="0.01" placeholder="0.00" required>
+            </label>
+            <label class="campo grow">
+                <span>Observaciones</span>
+                <input type="text" id="obs_apertura" maxlength="120" placeholder="Opcional">
+            </label>
+            <button type="submit" class="btn btn-rojo"><i class="fas fa-lock-open"></i> Abrir caja</button>
+        </form>
+    </section>
+
+    <!-- ================= OPERACIÓN (visible si está abierta) ================= -->
+    <div id="panelOperacion" hidden>
+
+        <!-- KPIs -->
+        <section class="kpis">
+            <div class="kpi"><span>Fondo inicial</span><strong id="kApertura">C$ 0.00</strong></div>
+            <div class="kpi"><span>Ingresos</span><strong id="kIngresos">C$ 0.00</strong><small id="kIngresosDet"></small></div>
+            <div class="kpi"><span>Egresos</span><strong id="kEgresos">C$ 0.00</strong></div>
+            <div class="kpi destacado"><span>Efectivo en gaveta</span><strong id="kEsperado">C$ 0.00</strong></div>
+        </section>
+
+        <div class="grid-2" data-permiso="caja.operar">
+            <!-- 2. PAGO -->
+            <section class="card">
+                <h2><span class="paso">2</span> Cobrar servicio</h2>
+                <form id="formPago">
+                    <label class="campo">
+                        <span>Orden de servicio pendiente de pago</span>
+                        <select id="pago_vehiculo" required>
+                            <option value="">Seleccione…</option>
+                        </select>
+                    </label>
+                    <div class="saldo-box" id="saldoBox" hidden></div>
+                    <div class="row">
+                        <label class="campo">
+                            <span>Monto (C$)</span>
+                            <input type="number" id="pago_monto" min="0.01" step="0.01" required>
+                        </label>
+                        <label class="campo">
+                            <span>Método</span>
+                            <select id="pago_metodo">
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="TARJETA">Tarjeta</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label class="campo" id="campoReferencia" hidden>
+                        <span>Referencia (voucher / nº transferencia)</span>
+                        <input type="text" id="pago_referencia" maxlength="50">
+                    </label>
+                    <button type="submit" class="btn btn-rojo"><i class="fas fa-hand-holding-dollar"></i> Registrar pago</button>
+                </form>
+            </section>
+
+            <!-- EGRESO -->
+            <section class="card">
+                <h2><span class="paso gris"><i class="fas fa-minus"></i></span> Egreso de caja</h2>
+                <form id="formEgreso">
+                    <label class="campo">
+                        <span>Concepto</span>
+                        <input type="text" id="egreso_concepto" maxlength="150" placeholder="Ej: compra de lija, almuerzo personal…" required>
+                    </label>
+                    <div class="row">
+                        <label class="campo">
+                            <span>Monto (C$)</span>
+                            <input type="number" id="egreso_monto" min="0.01" step="0.01" required>
+                        </label>
+                        <label class="campo">
+                            <span>Método</span>
+                            <select id="egreso_metodo">
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="TARJETA">Tarjeta</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-gris"><i class="fas fa-arrow-up-from-bracket"></i> Registrar egreso</button>
+                </form>
+            </section>
+        </div>
+
+        <!-- MOVIMIENTOS -->
+        <section class="card">
+            <h2>Movimientos de la sesión</h2>
+            <input type="text" id="buscar" class="input-buscar" placeholder="Buscar concepto, cliente, método…">
+            <div class="tabla-wrap">
+                <table id="tablaMov">
+                    <thead>
+                        <tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Cliente</th><th>Método</th><th class="num">Monto</th><th></th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. ARQUEO + 4. CIERRE -->
+        <section class="card" data-permiso="caja.operar">
+            <h2><span class="paso">3</span> Arqueo y <span class="paso">4</span> cierre</h2>
+            <p class="ayuda">Cuente el efectivo de la gaveta. El sistema compara contra lo esperado.</p>
+
+            <div class="denoms" id="denoms"></div>
+
+            <div class="arqueo-resumen">
+                <div><span>Esperado</span><strong id="aEsperado">C$ 0.00</strong></div>
+                <div><span>Contado</span><strong id="aContado">C$ 0.00</strong></div>
+                <div><span>Diferencia</span><strong id="aDiferencia">C$ 0.00</strong></div>
+            </div>
+
+            <label class="campo">
+                <span>Observaciones de cierre</span>
+                <input type="text" id="obs_cierre" maxlength="120" placeholder="Opcional (ej. explicación de faltante)">
+            </label>
+
+            <div class="row acciones">
+                <button type="button" id="btnArqueo" class="btn btn-gris"><i class="fas fa-calculator"></i> Guardar arqueo parcial</button>
+                <button type="button" id="btnCierre" class="btn btn-rojo"><i class="fas fa-lock"></i> Cerrar caja</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ================= CUENTAS POR COBRAR ================= -->
+    <section class="card" id="panelCxc" data-permiso="caja.cxc">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Cuentas por cobrar</h2>
+        <p class="ayuda">Vehículos ya entregados que aún tienen saldo pendiente.</p>
+        <div class="tabla-wrap">
+            <table>
+                <thead><tr><th>Orden</th><th>Cliente</th><th>Vehículo</th><th>Entregado</th><th class="num">Días</th><th class="num">Total</th><th class="num">Saldo</th><th></th></tr></thead>
+                <tbody id="tablaCxc"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================= HISTORIAL + 5. DEPÓSITO ================= -->
+    <section class="card" data-permiso="caja.ver">
+        <h2><span class="paso">5</span> Historial de cajas y depósitos</h2>
+        <div class="tabla-wrap">
+            <table id="tablaHist">
+                <thead>
+                    <tr>
+                        <th>#</th><th>Apertura</th><th>Cierre</th><th class="num">Ingresos</th>
+                        <th class="num">Egresos</th><th class="num">Contado</th><th class="num">Dif.</th>
+                        <th class="num">Depositado</th><th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<!-- MODAL DEPÓSITO -->
+<div class="modal" id="modalDeposito" hidden>
+    <div class="modal-caja">
+        <h3><i class="fas fa-building-columns"></i> Depósito del día — Caja #<span id="depSesion"></span></h3>
+        <p class="ayuda">Disponible para depositar: <strong id="depDisponible"></strong></p>
+        <form id="formDeposito">
+            <label class="campo"><span>Banco</span>
+                <select id="dep_banco" required>
+                    <option value="BANPRO">BANPRO</option>
+                    <option value="LAFISE">LAFISE</option>
+                    <option value="BAC">BAC</option>
+                    <option value="BDF">BDF</option>
+                    <option value="FICOHSA">FICOHSA</option>
+                    <option value="AVANZ">AVANZ</option>
+                </select>
+            </label>
+            <label class="campo"><span>Nº de boleta / referencia</span>
+                <input type="text" id="dep_referencia" maxlength="50" required></label>
+            <label class="campo"><span>Monto (C$)</span>
+                <input type="number" id="dep_monto" min="0.01" step="0.01" required></label>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" id="btnCerrarModal">Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-check"></i> Registrar depósito</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="JS/notificaciones.js"></script>
+<script src="JS/caja.js"></script>
+</body>
+</html>

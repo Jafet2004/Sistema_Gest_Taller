@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios y Roles - Taller Rostrán</title>
+    <script src="JS/auth.js"></script>
+    <link rel="stylesheet" href="Estilos/sistema.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .matriz th.rol { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: .8rem; padding: .6rem .3rem; vertical-align: bottom; }
+        .matriz td.c { text-align: center; }
+        .matriz input { width: auto; accent-color: var(--rojo); transform: scale(1.15); cursor: pointer; }
+        .matriz tr.modulo td { background: #fafafa; font-weight: 700; color: var(--rojo); font-size: .85rem; }
+        .matriz td.p small { color: var(--gris); display: block; }
+        .matriz td.p { min-width: 230px; }
+        .matriz th:first-child { background: var(--rojo); }
+        .cambiado { outline: 2px solid #ff9800; outline-offset: 1px; }
+    </style>
+</head>
+<body data-permisos="usuarios.admin|usuarios.reset">
+
+<header class="header">
+    <h1><i class="fas fa-user-shield"></i> Usuarios y Roles</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+</header>
+
+<main>
+<section class="card">
+    <div class="tabs">
+        <button class="tab activo" data-tab="usuarios"><i class="fas fa-users"></i> Usuarios</button>
+        <button class="tab" data-tab="roles" data-permiso="usuarios.admin"><i class="fas fa-table-cells"></i> Roles y permisos</button>
+        <button class="tab" data-tab="config" data-permiso="usuarios.admin"><i class="fas fa-sliders"></i> Configuración</button>
+    </div>
+
+    <!-- ========== USUARIOS ========== -->
+    <div id="panel-usuarios">
+        <form id="formUsuario" data-permiso="usuarios.admin">
+            <div class="row">
+                <label class="campo"><span>Usuario *</span><input id="u_nombre" maxlength="30" required placeholder="ej. jperez" autocomplete="off"></label>
+                <label class="campo"><span>Contraseña temporal *</span><input id="u_clave" required autocomplete="new-password"></label>
+                <label class="campo"><span>Rol *</span><select id="u_rol" required></select></label>
+                <label class="campo"><span>Trabajador vinculado</span><select id="u_trab"></select></label>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-user-plus"></i> Crear usuario</button>
+            </div>
+            <p class="hint">Vincule a técnicos y mecánicos con su ficha de trabajador: así ven solo las órdenes donde están asignados.
+                El usuario deberá cambiar la contraseña temporal al entrar.</p>
+        </form>
+
+        <div class="tabla-wrap" style="margin-top:1rem">
+            <table>
+                <thead><tr><th>Usuario</th><th>Trabajador / puesto</th><th>Rol</th><th>Último acceso</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="tablaUsuarios"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========== ROLES Y PERMISOS ========== -->
+    <div id="panel-roles" hidden>
+        <p class="hint">Marque qué puede hacer cada rol. Los cambios aplican de inmediato a todos los usuarios de ese rol.
+            El servidor revisa estos permisos en cada acción, no solo en el menú.</p>
+        <div class="tabla-wrap">
+            <table class="matriz">
+                <thead id="matrizHead"></thead>
+                <tbody id="matrizBody"></tbody>
+            </table>
+        </div>
+        <div class="row acciones">
+            <span class="hint" id="cambiosTxt" style="margin-right:auto"></span>
+            <button class="btn btn-gris" id="btnDeshacer">Deshacer</button>
+            <button class="btn btn-rojo" id="btnGuardarMatriz"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </div>
+
+    <!-- ========== CONFIGURACIÓN ========== -->
+    <div id="panel-config" hidden>
+        <h3 style="margin:0 0 .5rem"><i class="fas fa-key"></i> Política de contraseñas</h3>
+        <form id="formPolitica">
+            <div class="row">
+                <label class="campo" style="max-width:220px"><span>Longitud mínima (caracteres)</span>
+                    <input type="number" id="polMin" min="8" max="64" step="1" required></label>
+                <label class="check-linea"><input type="checkbox" id="polLetra"> Al menos una letra</label>
+                <label class="check-linea"><input type="checkbox" id="polNumero"> Al menos un número</label>
+                <label class="check-linea"><input type="checkbox" id="polMayus"> Al menos una mayúscula</label>
+                <label class="check-linea"><input type="checkbox" id="polSimbolo"> Al menos un símbolo</label>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-save"></i> Guardar política</button>
+            </div>
+        </form>
+        <p class="hint">Se guarda en la base de datos (tabla <code>Configuracion</code>) y el servidor la aplica al crear usuarios,
+            restablecer y cambiar contraseñas. Quien tenga una contraseña que ya no cumpla deberá cambiarla al iniciar sesión.
+            El mínimo permitido es 8.</p>
+
+        <h3 style="margin:1.5rem 0 .5rem"><i class="fas fa-cart-shopping"></i> Aprobación de compras</h3>
+        <form id="formConfig" class="row">
+            <label class="campo"><span>Monto que requiere aprobación de compra (C$)</span>
+                <input type="number" id="cfgMonto" min="0" step="0.01" required></label>
+            <button type="submit" class="btn btn-rojo"><i class="fas fa-save"></i> Guardar</button>
+        </form>
+        <p class="hint">Los pedidos de compra con total mayor a este monto no se pueden enviar ni recibir hasta que un usuario con
+            permiso <b>"Aprobar compras"</b> los apruebe. Use 0 para no exigir aprobación.</p>
+    </div>
+</section>
+</main>
+
+<!-- MODAL EDITAR USUARIO -->
+<div class="modal" id="modalUsuario" hidden>
+    <div class="modal-caja">
+        <div class="modal-head"><h3 id="eTitulo">Editar usuario</h3><button class="cerrar-x" data-cerrar>&times;</button></div>
+        <form id="formEditar">
+            <label class="campo"><span>Rol</span><select id="e_rol" required></select></label>
+            <label class="campo"><span>Trabajador vinculado</span><select id="e_trab"></select></label>
+            <label class="check-linea"><input type="checkbox" id="e_activo"> Usuario activo (puede iniciar sesión)</label>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" data-cerrar>Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL RESTABLECER CLAVE -->
+<div class="modal" id="modalClave" hidden>
+    <div class="modal-caja">
+        <div class="modal-head"><h3 id="cTitulo">Restablecer contraseña</h3><button class="cerrar-x" data-cerrar>&times;</button></div>
+        <form id="formClave">
+            <label class="campo"><span>Nueva contraseña temporal</span><input id="c_clave" required autocomplete="new-password"></label>
+            <p class="hint">El usuario deberá cambiarla al iniciar sesión.</p>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" data-cerrar>Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-key"></i> Restablecer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="JS/notificaciones.js"></script>
+<script src="JS/usuarios.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Órdenes de Servicio - Taller Rostrán</title>
+    <link rel="stylesheet" href="Estilos/sistema.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-permisos="ordenes.ver_todas|ordenes.ver_propias">
+
+<header class="header">
+    <h1><i class="fas fa-clipboard-list"></i> Órdenes de Servicio</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+</header>
+
+<main>
+
+    <!-- ========== INGRESAR VEHÍCULO AL TALLER ========== -->
+    <section class="card" data-permiso="ordenes.crear">
+        <h2><i class="fas fa-right-to-bracket"></i> Ingresar vehículo al taller</h2>
+
+        <!-- a) elegir vehículo -->
+        <div id="pasoVehiculo">
+            <div class="buscador">
+                <i class="fas fa-search"></i>
+                <input type="text" id="qVehiculo" placeholder="Buscar por chasis, marca, modelo o cliente…" autocomplete="off">
+            </div>
+            <div class="resultados" id="resVehiculos"></div>
+            <p class="hint" style="margin-top:.75rem">
+                ¿Cliente o vehículo nuevo? <a href="gest_veh.html"><i class="fas fa-car"></i> Regístrelo primero en Clientes y Vehículos</a>
+            </p>
+        </div>
+
+        <!-- b) vehículo elegido → servicios -->
+        <form id="formOrden" hidden>
+            <div class="cliente-sel">
+                <div class="avatar"><i class="fas fa-car"></i></div>
+                <div class="info">
+                    <strong id="selVehiculo"></strong><br>
+                    <small id="selCliente"></small>
+                </div>
+                <button type="button" class="btn btn-gris" id="btnOtroVeh"><i class="fas fa-repeat"></i> Otro vehículo</button>
+            </div>
+
+            <span class="campo"><span>Servicios a realizar * (uno o varios)</span></span>
+            <div class="servicios-lista" id="listaServicios"></div>
+
+            <div class="total-barra"><span id="cantServ">0 servicios</span><strong id="totalOrden">C$ 0.00</strong></div>
+
+            <div class="row">
+                <label class="campo"><span>Kilometraje</span><input type="number" id="kilometraje" min="0" placeholder="Opcional"></label>
+                <label class="campo grow"><span>Observaciones de recepción</span>
+                    <input id="observaciones" maxlength="255" placeholder="Lo que reporta el cliente, golpes, nivel de combustible…"></label>
+            </div>
+            <label class="campo"><span>Fotos de entrada (máx. 5)</span>
+                <input type="file" id="fotosEntrada" accept="image/*" multiple></label>
+            <div class="galeria" id="prevEntrada"></div>
+
+            <div class="row acciones">
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-check"></i> Ingresar al taller</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- ========== ÓRDENES ========== -->
+    <section class="card">
+        <h2><i class="fas fa-warehouse"></i> Vehículos en el taller</h2>
+        <div class="filtros" id="filtros">
+            <button class="filtro activo" data-f="activas">En taller</button>
+            <button class="filtro" data-f="ENTREGADO">Entregados</button>
+            <button class="filtro" data-f="CANCELADO">Cancelados</button>
+            <button class="filtro" data-f="todas">Todas</button>
+        </div>
+        <input type="text" id="buscar" class="input-buscar" placeholder="Filtrar por cliente, vehículo, servicio…">
+        <div class="tabla-wrap">
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Entrada</th><th>Cliente</th><th>Vehículo</th><th>Servicios</th>
+                        <th class="num">Total</th><th class="num">Saldo</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody id="tablaOrdenes"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- ========== MODAL DETALLE DE ORDEN ========== -->
+<div class="modal" id="modalOrden" hidden>
+    <div class="modal-caja ancho">
+        <div class="modal-head">
+            <div>
+                <h3 id="mTitulo"></h3>
+                <span class="estado" id="mEstado"></span>
+            </div>
+            <button class="cerrar-x" data-cerrar>&times;</button>
+        </div>
+
+        <div class="datos" id="mDatos"></div>
+
+        <div class="seccion-modal">
+            <h4>Servicios</h4>
+            <div class="tabla-wrap">
+                <table>
+                    <thead><tr><th>Servicio</th><th>Mecánico</th><th class="num">Precio</th><th></th></tr></thead>
+                    <tbody id="mServicios"></tbody>
+                </table>
+            </div>
+            <div class="row" id="mAgregar" style="margin-top:.75rem" data-permiso="ordenes.crear">
+                <label class="campo grow"><span>Agregar servicio</span><select id="mNuevoServ"></select></label>
+                <button class="btn btn-gris" id="btnAgregarServ"><i class="fas fa-plus"></i> Agregar</button>
+            </div>
+        </div>
+
+        <div class="seccion-modal">
+            <h4>Repuestos del inventario</h4>
+            <p class="hint" style="margin:-.3rem 0 .6rem">Los de la receta del servicio están incluidos en su precio. Salen del inventario al
+                <b>iniciar el trabajo</b> y regresan si la orden se cancela.</p>
+            <div class="tabla-wrap">
+                <table>
+                    <thead><tr><th>Repuesto</th><th>Origen</th><th class="num">Cant.</th><th class="num">Cobro</th><th>Inventario</th><th></th></tr></thead>
+                    <tbody id="mRepuestos"></tbody>
+                </table>
+            </div>
+            <div class="row" id="mAgregarRep" style="margin-top:.75rem" data-permiso="ordenes.avanzar">
+                <label class="campo grow"><span>Agregar repuesto adicional</span><select id="mRepProd"></select></label>
+                <label class="campo" style="max-width:120px"><span>Cantidad</span><input type="number" id="mRepCant" min="0.01" step="0.01" value="1"></label>
+                <label class="check-linea"><input type="checkbox" id="mRepCobrar" checked> Cobrar al cliente</label>
+                <button class="btn btn-gris" id="btnAgregarRep"><i class="fas fa-plus"></i> Agregar</button>
+            </div>
+            <div class="alerta" id="mFaltantes" hidden style="margin-top:.75rem">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span class="grow" id="mFaltantesTxt"></span>
+                <a class="btn btn-rojo btn-mini" href="compras.html"><i class="fas fa-cart-shopping"></i> Ir a compras</a>
+            </div>
+        </div>
+
+        <div class="seccion-modal" id="mFotosSec">
+            <h4>Fotos</h4>
+            <div class="galeria" id="mFotos"></div>
+        </div>
+
+        <div class="seccion-modal">
+            <h4>Avance</h4>
+            <div class="row" id="mAcciones"></div>
+        </div>
+
+        <!-- Entrega -->
+        <div class="seccion-modal" id="mEntrega" hidden data-permiso="ordenes.entregar">
+            <h4><i class="fas fa-key"></i> Entregar vehículo</h4>
+            <div class="row">
+                <label class="campo"><span>Trabajador que entrega *</span><select id="mTrabajador"></select></label>
+                <label class="campo"><span>Fotos de salida</span><input type="file" id="fotosSalida" accept="image/*" multiple></label>
+            </div>
+            <div class="row acciones">
+                <a class="btn btn-gris" href="caja.html" data-permiso="caja.operar"><i class="fas fa-cash-register"></i> Cobrar en Caja</a>
+                <button class="btn btn-rojo" id="btnEntregar"><i class="fas fa-key"></i> Registrar entrega</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="JS/notificaciones.js"></script>
+<script src="JS/ordenes.js"></script>
+</body>
+</html>

@@ -2,14 +2,16 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Agenda</title>
 
     <link rel="stylesheet" href="Estilos/agend.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body data-permisos="agenda.ver" data-editar="agenda.editar">
 
 <header class="header">
     <h1><i class="fas fa-calendar-alt"></i> Agenda de Citas</h1>
@@ -21,7 +23,7 @@
     <!-- FORMULARIO -->
     <section class="form-container">
         <h2>Registrar Cita</h2>
-        <form id="formCita">
+        <form id="formCita" data-permiso="agenda.editar">
             <div class="row">
                 <select id="cliente" required></select>
                 <select id="trabajo" required></select>
@@ -59,6 +61,7 @@
 
 </main>
 
+<script src="JS/notificaciones.js"></script>
 <script src="JS/agend.js"></script>
 </body>
 </html>

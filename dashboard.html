@@ -3,9 +3,10 @@
 
 <head>
   <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Taller Rostrán</title>
-  <link rel="stylesheet" href="/Estilos/ind.css">
+  <link rel="stylesheet" href="Estilos/ind.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Chart.js para gráficos -->
@@ -13,23 +14,18 @@
   <link rel="stylesheet" href="Estilos/dash.css">
 </head>
 
-<body>
+<body data-permisos="dashboard.ver">
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
       <div class="logo">
-        <img src="src/img_/logo.png" alt="Logo Taller Rostrán" height="50" width="50">
+        <img src="../src/img_/logo.png" alt="Logo Taller Rostrán" height="50" width="50">
         <h1>Taller Rostrán</h1>
       </div>
     </div>
 
     <div class="header-right">
       <nav class="nav-menu">
-        <a href="#" class="nav-link admin-panel">
-          <i class="fas fa-cog"></i>
-          <span>Panel Administrativo</span>
-        </a>
-
         <div id="user-info">
         <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
         </div>

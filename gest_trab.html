@@ -2,10 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
     <title>Gestión de Trabajadores</title>
     <link rel="stylesheet" href="Estilos/trab.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body data-permisos="trabajadores.ver" data-editar="trabajadores.editar">
 
 <header class="header">
     <h1>Gestión de Trabajadores</h1>
@@ -15,7 +18,7 @@
 <main>
 
     <!-- FORMULARIO -->
-    <div class="form-container">
+    <div class="form-container" data-permiso="trabajadores.editar">
         <h2>Registrar Trabajador</h2>
 
         <div class="row">
@@ -30,6 +33,28 @@
 
         <div class="row">
             <input type="text" id="celular" placeholder="Celular">
+            <select id="puesto">
+                <option value="">Puesto…</option>
+                <option>Gerente General</option>
+                <option>Asistente Administrativo-Contable</option>
+                <option>Encargado de Inventario y Compras</option>
+                <option>Asesor de Servicio y Caja</option>
+                <option>Jefe de Taller</option>
+                <option>Técnico en Diagnóstico</option>
+                <option>Mecánico Especializado</option>
+                <option>Auxiliar de Taller</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <input type="text" id="especialidad" placeholder="Especialidad (ej. electrónica e híbridos, frenos, motor)" list="especialidades">
+            <datalist id="especialidades">
+                <option value="Diagnóstico electrónico e híbridos">
+                <option value="Motor y transmisión">
+                <option value="Frenos y suspensión">
+                <option value="Aire acondicionado">
+                <option value="Electricidad automotriz">
+            </datalist>
         </div>
 
         <button class="btn-registrar" onclick="registrarTrabajador()">Registrar</button>
@@ -48,6 +73,7 @@
                     <th>Nombres</th>
                     <th>Apellidos</th>
                     <th>Celular</th>
+                    <th>Puesto / especialidad</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -57,6 +83,7 @@
 
 </main>
 
+<script src="JS/notificaciones.js"></script>
 <script src="JS/trabajadores.js"></script>
 </body>
 </html>

@@ -72,14 +72,14 @@ form.addEventListener("submit", async (e) => {
             });
             data = await res.json();
             if (res.ok) {
-                alert(data.message);
+                notificarSistema(data.message, 'exito');
                 btnSubmit.innerHTML = '<i class="fas fa-save"></i> Guardar Herramienta';
                 editMode = false;
                 editId = null;
                 form.reset();
                 cargarInventario();
             } else {
-                alert("Error: " + (data.error || data.message));
+                notificarSistema("Error: " + (data.error || data.message), 'error');
             }
         } else {
             // CREAR
@@ -90,16 +90,16 @@ form.addEventListener("submit", async (e) => {
             });
             data = await res.json();
             if (res.ok) {
-                alert(data.message);
+                notificarSistema(data.message, 'exito');
                 form.reset();
                 cargarInventario();
             } else {
-                alert("Error: " + (data.error || data.message));
+                notificarSistema("Error: " + (data.error || data.message), 'error');
             }
         }
     } catch (error) {
         console.error("Error:", error);
-        alert("Error de conexión con el servidor");
+        notificarSistema("Error de conexión con el servidor", 'error');
     }
 });
 
@@ -107,20 +107,21 @@ form.addEventListener("submit", async (e) => {
 // ELIMINAR
 // =========================
 async function eliminarHerramienta(id) {
-    if (!confirm("¿Seguro que deseas eliminar esta herramienta?")) return;
+    const confirmado = await confirmarSistema("¿Seguro que deseas eliminar esta herramienta?", "Eliminar herramienta");
+    if (!confirmado) return;
 
     try {
         const res = await fetch(`${API}/inventario/${id}`, { method: "DELETE" });
         const data = await res.json();
         if (res.ok) {
-            alert(data.message);
+            notificarSistema(data.message, 'exito');
             cargarInventario();
         } else {
-            alert("Error: " + (data.message || "No se pudo eliminar"));
+            notificarSistema("Error: " + (data.message || "No se pudo eliminar"), 'error');
         }
     } catch (error) {
         console.error("Error:", error);
-        alert("Error de conexión con el servidor");
+        notificarSistema("Error de conexión con el servidor", 'error');
     }
 }
 

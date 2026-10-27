@@ -1,67 +1,149 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Inventario - Taller Rostrán</title>
-
-    <link rel="stylesheet" href="Estilos/inv.css">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <title>Inventario - Taller Rostrán</title>
+    <link rel="stylesheet" href="Estilos/sistema.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+<body data-permisos="inventario.ver|herramientas.ver">
 
-<body>
+<header class="header">
+    <h1><i class="fas fa-boxes"></i> Inventario</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+</header>
 
-    <header class="header">
-        <h1><i class="fas fa-boxes"></i> Gestión de Inventario</h1>
-        <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
-    </header>
+<main>
 
-    <main>
+    <!-- Alerta de stock mínimo -->
+    <div class="alerta" id="alertaStock" hidden>
+        <i class="fas fa-triangle-exclamation"></i>
+        <span class="grow" id="alertaTexto"></span>
+        <a class="btn btn-rojo btn-mini" href="compras.html" data-permiso="compras.ver"><i class="fas fa-cart-shopping"></i> Generar pedido de compra</a>
+    </div>
 
-        <!-- FORMULARIO -->
-        <section class="form-container">
-            <h2>Registrar Herramienta</h2>
+    <section class="card">
+        <div class="tabs">
+            <button class="tab activo" data-tab="repuestos" data-permiso="inventario.ver"><i class="fas fa-oil-can"></i> Repuestos e insumos <span class="contador" id="cntBajo" hidden></span></button>
+            <button class="tab" data-tab="herramientas" data-permiso="herramientas.ver"><i class="fas fa-screwdriver-wrench"></i> Herramientas</button>
+            <a class="btn btn-gris btn-mini tab-link" href="compras.html" data-permiso="compras.ver"><i class="fas fa-truck"></i> Compras y proveedores</a>
+        </div>
 
-            <form id="formHerramienta">
-                <div class="row">
-                    <input type="text" id="tool_name" placeholder="Nombre de la Herramienta" required>
-                    <input type="text" id="tool_marca" placeholder="Marca de la Herramienta" required>
-                    <input type="number" id="tool_cantidad" placeholder="Cantidad" required>
+        <!-- ================= REPUESTOS ================= -->
+        <div id="panel-repuestos">
+            <p class="hint">Los repuestos se <b>consumen</b> en las órdenes de servicio y se reponen con <b>compras</b>.
+                El stock solo cambia con compras, órdenes o ajustes, y todo queda en el kardex.</p>
+
+            <div class="row" style="margin-bottom:.75rem">
+                <div class="filtros" id="filtrosRep" style="margin:0">
+                    <button class="filtro activo" data-f="todos">Todos</button>
+                    <button class="filtro" data-f="bajo">Bajo mínimo</button>
                 </div>
+                <input type="text" id="buscarRep" class="grow" placeholder="Buscar código, nombre, marca o proveedor…" style="flex:1;min-width:200px">
+                <button class="btn btn-rojo" id="btnNuevoRep" data-permiso="inventario.editar"><i class="fas fa-plus"></i> Nuevo repuesto</button>
+            </div>
 
-                <button type="submit" class="btn-registrar">
-                    <i class="fas fa-save"></i> Guardar Herramienta
-                </button>
+            <div class="tabla-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Código</th><th>Repuesto</th><th>Proveedor</th><th class="num">Stock</th><th class="num">Mínimo</th>
+                            <th class="num">Costo prom.</th><th class="num">Precio venta</th><th>Estado</th><th></th></tr>
+                    </thead>
+                    <tbody id="tablaRep"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= HERRAMIENTAS (inv.js, sin cambios) ================= -->
+        <div id="panel-herramientas" hidden data-editar="herramientas.editar">
+            <p class="hint">Las herramientas son activos del taller: <b>no se consumen</b> en las órdenes.</p>
+            <form id="formHerramienta" data-permiso="herramientas.editar">
+                <div class="row">
+                    <label class="campo"><span>Nombre de la herramienta</span><input type="text" id="tool_name" maxlength="30" required></label>
+                    <label class="campo"><span>Marca</span><input type="text" id="tool_marca" maxlength="25" required></label>
+                    <label class="campo"><span>Cantidad</span><input type="number" id="tool_cantidad" min="0" required></label>
+                    <button type="submit" class="btn btn-rojo btn-registrar"><i class="fas fa-save"></i> Guardar Herramienta</button>
+                </div>
             </form>
-        </section>
+            <input type="text" id="buscar" placeholder="Buscar herramienta…" class="input-buscar" style="margin-top:1rem">
+            <div class="tabla-wrap">
+                <table id="tablaHerramientas">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Marca</th><th>Cantidad</th><th class="CRUD">Acciones</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
 
-        <!-- LISTA Inventario -->
-        <section class="Inventario-lista">
-            <h2>Herramientas Registradas</h2>
+<!-- MODAL PRODUCTO -->
+<div class="modal" id="modalProd" hidden>
+    <div class="modal-caja ancho">
+        <div class="modal-head"><h3 id="prodTitulo">Nuevo repuesto</h3><button class="cerrar-x" data-cerrar>&times;</button></div>
+        <form id="formProd">
+            <div class="row">
+                <label class="campo"><span>Código *</span><input id="p_codigo" maxlength="30" required placeholder="ACE-15W40"></label>
+                <label class="campo grow"><span>Nombre *</span><input id="p_nombre" maxlength="80" required></label>
+            </div>
+            <div class="row">
+                <label class="campo"><span>Marca</span><input id="p_marca" maxlength="40"></label>
+                <label class="campo"><span>Unidad</span>
+                    <select id="p_unidad">
+                        <option>unidad</option><option>litro</option><option>galón</option><option>juego</option>
+                        <option>kit</option><option>metro</option><option>caja</option>
+                    </select></label>
+                <label class="campo"><span>Proveedor preferido</span><select id="p_proveedor"></select></label>
+            </div>
+            <div class="row">
+                <label class="campo"><span>Stock mínimo *</span><input type="number" id="p_minimo" min="0" step="0.01" required></label>
+                <label class="campo"><span>Costo (C$)</span><input type="number" id="p_costo" min="0" step="0.01"></label>
+                <label class="campo"><span>Precio de venta (C$)</span><input type="number" id="p_precio" min="0" step="0.01"></label>
+                <label class="campo" id="campoStockIni"><span>Stock inicial</span><input type="number" id="p_stock_ini" min="0" step="0.01" value="0"></label>
+            </div>
+            <p class="hint" id="hintCosto" hidden>El costo se recalcula solo con cada compra (promedio ponderado). El stock se cambia con un ajuste.</p>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" data-cerrar>Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-            <input type="text" id="buscar" placeholder="Buscar herramienta..." class="input-buscar">
+<!-- MODAL AJUSTE -->
+<div class="modal" id="modalAjuste" hidden>
+    <div class="modal-caja">
+        <div class="modal-head"><h3 id="ajTitulo">Ajuste de inventario</h3><button class="cerrar-x" data-cerrar>&times;</button></div>
+        <p class="hint" id="ajStock"></p>
+        <form id="formAjuste">
+            <label class="campo"><span>Cantidad (+ entra / − sale)</span><input type="number" id="aj_cant" step="0.01" required placeholder="Ej: -2"></label>
+            <label class="campo"><span>Motivo *</span><input id="aj_nota" maxlength="150" required placeholder="Conteo físico, producto dañado…"></label>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" data-cerrar>Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-check"></i> Registrar ajuste</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-            <table id="tablaHerramientas">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Marca</th>
-                        <th>Cantidad</th>
-                        <th class="CRUD">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
+<!-- MODAL KARDEX -->
+<div class="modal" id="modalKardex" hidden>
+    <div class="modal-caja ancho">
+        <div class="modal-head"><h3 id="kxTitulo">Kardex</h3><button class="cerrar-x" data-cerrar>&times;</button></div>
+        <div class="tabla-wrap">
+            <table>
+                <thead><tr><th>Fecha</th><th>Movimiento</th><th>Referencia</th><th class="num">Cantidad</th><th class="num">Costo</th><th class="num">Saldo</th></tr></thead>
+                <tbody id="kxBody"></tbody>
             </table>
-        </section>
+        </div>
+    </div>
+</div>
 
-    </main>
-
-    <script src="JS/inv.js"></script>
+<script src="JS/notificaciones.js"></script>
+<script src="JS/inv.js"></script>        <!-- herramientas (tu archivo de siempre) -->
+<script src="JS/repuestos.js"></script>  <!-- repuestos con stock -->
 </body>
-
 </html>

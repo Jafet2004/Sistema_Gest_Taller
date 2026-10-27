@@ -3,14 +3,36 @@
 
 <head>
     <meta charset="UTF-8">
+    <script src="JS/auth.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Servicios - Taller Rostrán</title>
 
     <link rel="stylesheet" href="Estilos/serv.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Receta de repuestos (vínculo con inventario) */
+        .receta { margin-top: 1.25rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .receta h3 { margin: 0 0 .25rem; color: #b71c1c; font-size: 1.1rem; display: flex; gap: .5rem; align-items: center; }
+        .receta .ayuda { color: #666; font-size: .88rem; margin: 0 0 .75rem; }
+        .receta table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+        .receta th { background: #f5f5f5; text-align: left; padding: .5rem; }
+        .receta td { padding: .45rem .5rem; border-bottom: 1px solid #eee; }
+        .receta .num { text-align: right; white-space: nowrap; }
+        .receta .agregar { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+        .receta .agregar select { flex: 2; min-width: 200px; }
+        .receta .agregar input { width: 110px; }
+        .receta select, .receta input { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+        .receta .btn-mini { background: #b71c1c; color: #fff; border: none; border-radius: 6px; padding: .5rem .9rem; cursor: pointer; font: inherit; }
+        .receta .btn-sec { background: #eceff1; color: #333; }
+        .receta .bajo { color: #b71c1c; font-weight: 700; }
+        .receta .x { background: none; border: none; color: #999; cursor: pointer; font-size: 1rem; }
+        .receta .acciones { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .75rem; flex-wrap: wrap; }
+        .receta-vacia { color: #888; text-align: center; padding: .75rem; }
+    </style>
 </head>
 
-<body>
+<body data-permisos="catalogo.ver|catalogo.recetas">
 
     <header class="header">
         <h1><i class="fas fa-tools"></i> Gestión de Servicios</h1>
@@ -23,7 +45,7 @@
         <section class="form-container">
             <h2>Registrar Servicio</h2>
 
-            <form id="formServicio">
+            <form id="formServicio" data-permiso="catalogo.editar">
 
     <div class="row">
         <input type="text" id="Name_trabajo" placeholder="Nombre del Servicio" required>
@@ -67,6 +89,28 @@
 
 </form>
 
+            <!-- ===== RECETA: repuestos del inventario que consume este servicio ===== -->
+            <div class="receta" id="panelReceta">
+                <h3><i class="fas fa-oil-can"></i> Repuestos que usa este servicio</h3>
+                <p class="ayuda" id="recetaAyuda">Guarde o seleccione (editar) un servicio para asignarle repuestos del inventario.</p>
+                <div id="recetaContenido" hidden>
+                    <table>
+                        <thead><tr><th>Repuesto</th><th class="num">Cantidad</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Precio venta</th><th></th></tr></thead>
+                        <tbody id="recetaItems"></tbody>
+                    </table>
+                    <div class="agregar" data-permiso="catalogo.recetas">
+                        <select id="recetaProducto"></select>
+                        <input type="number" id="recetaCantidad" min="0.01" step="0.01" placeholder="Cantidad">
+                        <button type="button" class="btn-mini" id="btnRecetaAgregar" data-permiso="catalogo.recetas"><i class="fas fa-plus"></i> Agregar</button>
+                    </div>
+                    <div class="acciones">
+                        <button type="button" class="btn-mini btn-sec" id="btnUsarCosto" data-permiso="catalogo.editar" title="Copia el valor de los repuestos al campo 'Costo existencia'">
+                            <i class="fas fa-calculator"></i> Usar como "Costo existencia"</button>
+                        <button type="button" class="btn-mini" id="btnRecetaGuardar" data-permiso="catalogo.recetas"><i class="fas fa-save"></i> Guardar repuestos</button>
+                    </div>
+                </div>
+            </div>
+
 
 
         </section>
@@ -93,6 +137,7 @@
 
     </main>
 
+    <script src="JS/notificaciones.js"></script>
     <script src="JS/serv.js"></script>
 </body>
 

@@ -1,0 +1,178 @@
+/* =========================================================
+   CAJA — Taller Rostrán
+   ========================================================= */
+:root {
+    --rojo: #b71c1c;
+    --rojo-osc: #8b0000;
+    --rojo-suave: #fdecea;
+    --verde: #2e7d32;
+    --verde-suave: #e8f5e9;
+    --gris: #5f6368;
+    --borde: #e5e5e5;
+    --fondo: #f4f5f7;
+    --texto: #222;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+}
+
+/* ---------- header ---------- */
+.header {
+    background: linear-gradient(135deg, var(--rojo), var(--rojo-osc));
+    color: #fff;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+}
+.header h1 { margin: 0; font-size: 1.5rem; display: flex; gap: .6rem; align-items: center; }
+.btn-volver {
+    color: #fff; text-decoration: none; background: rgba(255,255,255,.15);
+    padding: .5rem 1rem; border-radius: 8px; font-weight: 500;
+}
+.btn-volver:hover { background: rgba(255,255,255,.28); }
+
+#panelOperacion { display: flex; flex-direction: column; gap: 1.25rem; }
+main { max-width: 1200px; margin: 1.5rem auto; padding: 0 16px; display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ---------- estado ---------- */
+.estado-caja {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    background: #fff; border-radius: 12px; padding: 1rem 1.25rem;
+    border-left: 6px solid var(--gris); box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.estado-caja.abierta { border-left-color: var(--verde); }
+.estado-badge {
+    font-weight: 700; padding: .4rem .9rem; border-radius: 999px;
+    background: #eee; color: var(--gris);
+}
+.estado-caja.abierta .estado-badge { background: var(--verde-suave); color: var(--verde); }
+.estado-info { margin: 0; color: var(--gris); }
+
+/* ---------- tarjetas ---------- */
+.card {
+    background: #fff; border-radius: 12px; padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.card h2 { margin: 0 0 1rem; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.paso {
+    display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--rojo); color: #fff; font-size: .8rem; font-weight: 700;
+}
+.paso.gris { background: var(--gris); }
+.ayuda { color: var(--gris); margin: -.5rem 0 1rem; font-size: .9rem; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+/* ---------- KPIs ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.kpi {
+    background: #fff; border-radius: 12px; padding: 1rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05); display: flex; flex-direction: column; gap: .25rem;
+}
+.kpi span { color: var(--gris); font-size: .85rem; }
+.kpi strong { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--gris); font-size: .72rem; }
+.kpi.destacado { background: var(--rojo); color: #fff; }
+.kpi.destacado span { color: rgba(255,255,255,.85); }
+
+/* ---------- formularios ---------- */
+form { display: flex; flex-direction: column; gap: .85rem; }
+.row { display: flex; gap: .85rem; align-items: flex-end; flex-wrap: wrap; }
+.row > .campo { flex: 1; min-width: 140px; }
+.campo { display: flex; flex-direction: column; gap: .3rem; }
+.campo.grow { flex: 2; }
+.campo span { font-size: .82rem; font-weight: 600; color: #444; }
+input, select {
+    font: inherit; padding: .6rem .75rem; border: 1px solid #d5d5d5; border-radius: 8px;
+    background: #fff; width: 100%;
+}
+input:focus, select:focus { outline: 2px solid rgba(183,28,28,.25); border-color: var(--rojo); }
+
+.btn {
+    font: inherit; font-weight: 600; border: none; border-radius: 8px; cursor: pointer;
+    padding: .65rem 1.1rem; display: inline-flex; align-items: center; gap: .5rem; justify-content: center;
+}
+.btn-rojo { background: var(--rojo); color: #fff; }
+.btn-rojo:hover { background: var(--rojo-osc); }
+.btn-gris { background: #eceff1; color: #333; }
+.btn-gris:hover { background: #dfe3e6; }
+.btn-mini { background: var(--rojo); color: #fff; padding: .35rem .7rem; font-size: .8rem; }
+.btn-icon { background: none; border: none; color: var(--gris); cursor: pointer; padding: .3rem; }
+.btn-icon:hover { color: var(--rojo); }
+.acciones { justify-content: flex-end; margin-top: .5rem; }
+
+.saldo-box {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem;
+    background: var(--rojo-suave); border-radius: 8px; padding: .75rem;
+}
+.saldo-box div { display: flex; flex-direction: column; font-size: .8rem; }
+.saldo-box span { color: var(--gris); }
+
+/* ---------- tablas ---------- */
+.tabla-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { background: var(--rojo); color: #fff; text-align: left; padding: .65rem .75rem; font-weight: 600; white-space: nowrap; }
+td { padding: .6rem .75rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+td small { color: var(--gris); }
+tbody tr:hover { background: #fafafa; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vacio { text-align: center; color: var(--gris); padding: 1.5rem; }
+.input-buscar { margin-bottom: .75rem; }
+
+.tag { padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+.tag.in, .tag.ok { background: var(--verde-suave); color: var(--verde); }
+.tag.out { background: var(--rojo-suave); color: var(--rojo); }
+.rojo { color: var(--rojo); }
+.verde { color: var(--verde); }
+
+/* ---------- arqueo ---------- */
+.denoms { display: grid; grid-template-columns: repeat(5, 1fr); gap: .75rem; margin-bottom: 1rem; }
+.denom {
+    display: flex; flex-direction: column; gap: .25rem; border: 1px solid var(--borde);
+    border-radius: 8px; padding: .6rem;
+}
+.denom span { font-size: .78rem; font-weight: 600; }
+.denom small { color: var(--gris); font-size: .75rem; text-align: right; }
+.arqueo-resumen {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    background: #fafafa; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+}
+.arqueo-resumen div { display: flex; flex-direction: column; }
+.arqueo-resumen span { color: var(--gris); font-size: .82rem; }
+.arqueo-resumen strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- modal ---------- */
+.modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    display: grid; place-items: center; z-index: 900; padding: 16px;
+}
+.modal[hidden] { display: none; }
+.modal-caja { background: #fff; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 440px; }
+.modal-caja h3 { margin-top: 0; }
+
+[hidden] { display: none !important; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .denoms { grid-template-columns: repeat(2, 1fr); }
+    .saldo-box { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+    .header { padding: 1rem; }
+    .arqueo-resumen { grid-template-columns: 1fr; }
+    .kpi strong { font-size: 1.1rem; }
+}
+
+/* Las confirmaciones y avisos de notificaciones.js deben quedar encima de los modales */
+.modal-confirm-overlay { z-index: 2000 !important; }
+#toast-sistema-container { z-index: 2100 !important; }

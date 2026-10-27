@@ -2,82 +2,108 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Vehículos</title>
-    <link rel="stylesheet" href="Estilos/vehic.css">
+    <script src="JS/auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes y Vehículos - Taller Rostrán</title>
+    <link rel="stylesheet" href="Estilos/sistema.css">
+    <link rel="stylesheet" href="Estilos/notificaciones.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body data-permisos="clientes.ver|ordenes.crear">
 
 <header class="header">
-    <h1>Gestión de Vehículos</h1>
-    <a href="index.html" class="btn-volver">Volver</a>
+    <h1><i class="fas fa-car"></i> Clientes y Vehículos</h1>
+    <a href="index.html" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
 </header>
 
 <main>
 
-    <!-- FORMULARIO DE ENTRADA -->
-    <div class="form-container">
-        <h2>Registrar Entrada de Vehículo</h2>
+    <!-- ========== PASO 1: BUSCAR CLIENTE ========== -->
+    <section class="card" id="panelBuscar">
+        <h2><span class="paso">1</span> Buscar cliente</h2>
+        <div class="buscador">
+            <i class="fas fa-search"></i>
+            <input type="text" id="qCliente" placeholder="Nombre, apellido o celular…" autocomplete="off">
+        </div>
+        <div class="resultados" id="resultados"></div>
 
-        <div class="row">
-            <input type="text" id="Marca" placeholder="Marca *" required>
-            <input type="text" id="Modelo" placeholder="Modelo *" required>
+        <p class="hint" style="margin-top:1rem">
+            ¿No aparece? <a href="#" id="lnkNuevoCliente" data-permiso="clientes.editar"><i class="fas fa-user-plus"></i> Registrar cliente nuevo</a>
+        </p>
+
+        <form id="formCliente" hidden>
+            <div class="row">
+                <label class="campo"><span>Primer nombre *</span><input id="c_pr_name" maxlength="20" required></label>
+                <label class="campo"><span>Segundo nombre *</span><input id="c_sc_name" maxlength="20" required></label>
+            </div>
+            <div class="row">
+                <label class="campo"><span>Primer apellido *</span><input id="c_pr_lastname" maxlength="20" required></label>
+                <label class="campo"><span>Segundo apellido *</span><input id="c_sc_lastname" maxlength="20" required></label>
+                <label class="campo"><span>Celular *</span>
+                    <input id="c_celular" maxlength="8" pattern="[578][0-9]{7}" title="8 dígitos, inicia con 5, 7 u 8" required></label>
+            </div>
+            <div class="row acciones">
+                <button type="button" class="btn btn-gris" id="btnCancelarCliente">Cancelar</button>
+                <button type="submit" class="btn btn-rojo"><i class="fas fa-save"></i> Guardar y seleccionar</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- ========== PASO 2: VEHÍCULOS DEL CLIENTE ========== -->
+    <section class="card" id="panelCliente" hidden>
+        <h2><span class="paso">2</span> Vehículos del cliente</h2>
+
+        <div class="cliente-sel">
+            <div class="avatar" id="avatar"></div>
+            <div class="info">
+                <strong id="clienteNombre"></strong><br>
+                <small id="clienteCel"></small>
+            </div>
+            <button class="btn btn-gris" id="btnCambiar"><i class="fas fa-repeat"></i> Cambiar cliente</button>
         </div>
 
-        <div class="row">
-            <input type="text" id="Año" placeholder="Año" pattern="\d{4}">
-            <input type="text" id="Numero_chasis" placeholder="Número de Chasis *" maxlength="16" required>
+        <div class="vehiculos" id="listaVehiculos"></div>
+
+        <!-- Registrar vehículo -->
+        <div class="seccion-modal" data-permiso="clientes.editar">
+            <h4 id="tituloFormVeh"><i class="fas fa-plus"></i> Registrar vehículo a este cliente</h4>
+            <form id="formVehiculo">
+                <div class="row">
+                    <label class="campo"><span>Marca *</span><input id="Marca" maxlength="20" required></label>
+                    <label class="campo"><span>Modelo *</span><input id="Modelo" maxlength="20" required></label>
+                    <label class="campo"><span>Año</span><input id="Anio" maxlength="4" pattern="\d{4}" placeholder="2018"></label>
+                    <label class="campo"><span>Nº de chasis *</span><input id="Numero_chasis" maxlength="16" required></label>
+                </div>
+                <div class="row acciones">
+                    <button type="button" class="btn btn-gris" id="btnCancelarVeh" hidden>Cancelar edición</button>
+                    <button type="submit" class="btn btn-rojo" id="btnGuardarVeh"><i class="fas fa-save"></i> Registrar vehículo</button>
+                </div>
+            </form>
+            <p class="hint">Registrar un vehículo <b>no</b> lo ingresa al taller. Para eso use
+                <b>“Ingresar al taller”</b> en la tarjeta del vehículo.</p>
         </div>
-
-        <div class="row">
-            <select id="id_client" required></select>
-            <select id="id_trabajo" required></select>
-        </div>
-
-        <div class="row">
-            <label>Fotos de entrada (Máx. 5):</label>
-            <input type="file" id="foto_int" accept="image/*" multiple>
-            <div id="preview-container" class="preview-container"></div>
-        </div>
-
-        <button class="btn-registrar" onclick="registrarVehiculo()">Registrar Vehículo</button>
-        <div id="mensaje-error" class="mensaje-error"></div>
-    </div>
-
-
-    <!-- TABLA -->
-    <div class="veh-lista">
-        <h2>Vehículos Registrados</h2>
-
-        <input type="text" id="buscar" class="input-buscar" placeholder="Buscar por marca, modelo o chasis..." onkeyup="filtrarTabla()">
-
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Vehículo</th>
-                    <th>Chasis</th>
-                    <th>Cliente</th>
-                    <th>Trabajo</th>
-                    <th>Entrada</th>
-                    <th>Salida</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-veh"></tbody>
-        </table>
-    </div>
+    </section>
 
 </main>
 
-<!-- MODAL PARA VER VEHÍCULO -->
-<div id="modal-vehiculo" class="modal">
-    <div class="modal-contenido">
-        <span class="cerrar-modal" onclick="cerrarModal()">&times;</span>
-        <div id="modal-contenido"></div>
+<!-- MODAL HISTORIAL -->
+<div class="modal" id="modalHist" hidden>
+    <div class="modal-caja ancho">
+        <div class="modal-head">
+            <h3 id="histTitulo">Historial</h3>
+            <button class="cerrar-x" data-cerrar>&times;</button>
+        </div>
+        <div class="tabla-wrap">
+            <table>
+                <thead><tr><th>Orden</th><th>Entrada</th><th>Salida</th><th>Servicios</th><th class="num">Total</th><th>Estado</th></tr></thead>
+                <tbody id="histBody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
+<script src="JS/notificaciones.js"></script>
 <script src="JS/vehic.js"></script>
 </body>
 </html>
