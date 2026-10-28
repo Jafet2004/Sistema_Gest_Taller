@@ -38,6 +38,7 @@ app.use(require("./modulos/auth/reglas").controlAcceso);
 
 // Sitio público para clientes (seguimiento de su vehículo; no requiere sesión)
 app.use(require("./modulos/publico/publico.routes"));
+app.use(require("./modulos/publico/portal.routes"));      // login y consultas de clientes
 
 // Autenticación
 app.use(require("./modulos/auth/auth.routes"));

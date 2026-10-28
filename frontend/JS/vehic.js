@@ -71,7 +71,8 @@ $("formCliente").addEventListener("submit", async e => {
     const c = {
         pr_name: $("c_pr_name").value.trim(), sc_name: $("c_sc_name").value.trim(),
         pr_lastname: $("c_pr_lastname").value.trim(), sc_lastname: $("c_sc_lastname").value.trim(),
-        celular: $("c_celular").value.trim()
+        celular: $("c_celular").value.trim(),
+        cedula: $("c_cedula").value.trim()
     };
     try {
         const r = await api("/clientes", { method: "POST", body: c });

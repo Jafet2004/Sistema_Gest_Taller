@@ -98,6 +98,10 @@ async function controlAcceso(req, res, next) {
     try {
         if (req.method === "OPTIONS") return next();
         const ruta = req.path;
+        // Sitio para clientes: todo /publico/... funciona SIN iniciar sesión
+        if (ruta.startsWith("/publico/")) return next();
+        // Portal de clientes: tiene su PROPIA sesión y controles (portal.routes.js)
+        if (ruta.startsWith("/portal/")) return next();
         if (PUBLICAS.some(([m, rx]) => m === req.method && rx.test(ruta))) return next();
 
         if (!req.session?.userId) return res.status(401).json({ message: "Inicie sesión" });

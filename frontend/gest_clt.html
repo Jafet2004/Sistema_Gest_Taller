@@ -40,8 +40,16 @@
                 </div>
 
                 <div class="row">
+                    <input type="text" id="cedula" placeholder="Cédula (001-010190-0001A)" maxlength="16">
                     <input type="text" id="celular" placeholder="Celular (8 dígitos)" required>
                 </div>
+
+                <div class="row">
+                    <input type="email" id="correo" placeholder="Correo (opcional)">
+                </div>
+                <p style="font-size:.85rem;color:#666;margin:.25rem 0 .75rem">
+                    Con la cédula y el celular el cliente activa su cuenta en el sitio para consultar sus órdenes.
+                </p>
 
                 <button type="submit" class="btn-registrar">
                     <i class="fas fa-save"></i> Guardar Cliente
@@ -60,7 +68,9 @@
                     <tr>
                         <th>ID</th>
                         <th>Nombre Completo</th>
-                        <th>Celular</th>
+                        <th>Cédula</th>
+                        <th>Celular / correo</th>
+                        <th>Portal</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>

@@ -69,7 +69,8 @@ CREATE TABLE Vehiculos(
     id_client INT NOT NULL,
     id_trabajo INT,
     FOREIGN KEY (id_client) REFERENCES Clientes(id_client),
-    FOREIGN KEY (id_trabajo) REFERENCES List_Trabajo(id_trabajo)
+    FOREIGN KEY (id_trabajo) REFERENCES List_Trabajo(id_trabajo),
+    foreign key (id_trab) references Trabajador(id_trab)
 );
 
 -- =========================

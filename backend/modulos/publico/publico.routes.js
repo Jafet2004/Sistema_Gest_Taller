@@ -1,7 +1,7 @@
 // =========================================================
 // SITIO PÚBLICO PARA CLIENTES (sin inicio de sesión)
 //   GET  /publico/servicios    → catálogo para mostrar en la página (sin precios)
-//   POST /publico/seguimiento  → estado de una orden { orden, verificacion }
+//   (la consulta de órdenes está en portal.routes.js y requiere sesión del cliente)
 //
 // Seguridad:
 //   - El número de orden es consecutivo y fácil de adivinar, por eso se pide además
@@ -40,58 +40,7 @@ router.get("/publico/servicios", h(async (req, res) => {
     res.json(rows);
 }));
 
-// ---------- seguimiento de una orden ----------
-router.post("/publico/seguimiento", h(async (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress;
-    if (bloqueado(ip))
-        return res.status(429).json({ message: "Demasiadas consultas. Intente de nuevo en unos minutos." });
-
-    const orden = parseInt(String(req.body.orden || "").replace(/\D/g, ""), 10);
-    const verif = String(req.body.verificacion || "").replace(/\D/g, "");
-    if (!orden || verif.length !== 4)
-        return res.status(400).json({ message: "Ingrese el número de orden y los últimos 4 dígitos de su celular." });
-
-    const [[o]] = await db.query(`
-        SELECT o.id_orden, o.estado, o.kilometraje,
-               DATE_FORMAT(o.fecha_entrada, '${FMT}') AS fecha_entrada,
-               DATE_FORMAT(o.fecha_salida,  '${FMT}') AS fecha_salida,
-               c.pr_name AS nombre, c.celular,
-               v.Marca, v.Modelo, v.Año AS anio,
-               vt.total, vt.pagado
-        FROM Orden_Servicio o
-        JOIN Clientes c   ON c.id_client = o.id_client
-        JOIN Vehiculos v  ON v.id_Vehic  = o.id_Vehic
-        JOIN v_orden_total vt ON vt.id_orden = o.id_orden
-        WHERE o.id_orden = ?`, [orden]);
-
-    if (!o || String(o.celular).slice(-4) !== verif) {
-        registrarFallo(ip);
-        return res.status(404).json({ message: "No encontramos una orden con esos datos. Revise el número de orden y su celular." });
-    }
-
-    const [servicios] = await db.query(`
-        SELECT t.Name_trabajo AS nombre, t.Detalle_trab AS detalle
-        FROM Orden_Servicio_Detalle d JOIN List_Trabajo t ON t.id_trabajo = d.id_trabajo
-        WHERE d.id_orden = ? ORDER BY d.id_detalle`, [orden]);
-
-    const [historial] = await db.query(`
-        SELECT estado, DATE_FORMAT(fecha, '${FMT}') AS fecha
-        FROM Orden_Estado_Historial WHERE id_orden = ? ORDER BY fecha, id_hist`, [orden]);
-
-    res.json({
-        orden: o.id_orden,
-        estado: o.estado,
-        cliente: o.nombre,
-        vehiculo: { marca: o.Marca, modelo: o.Modelo, anio: o.anio },
-        kilometraje: o.kilometraje,
-        fecha_entrada: o.fecha_entrada,
-        fecha_salida: o.fecha_salida,
-        servicios,
-        historial,
-        total: Number(o.total),
-        pagado: Number(o.pagado),
-        saldo: Math.round((Number(o.total) - Number(o.pagado)) * 100) / 100
-    });
-}));
+// La consulta de órdenes ahora requiere que el cliente inicie sesión:
+// ver modulos/publico/portal.routes.js  (POST /portal/orden)
 
 module.exports = router;
