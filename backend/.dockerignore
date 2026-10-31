@@ -1,0 +1,32 @@
+# Lo que NO debe entrar a la imagen (menos peso, builds más rápidos y sin secretos)
+
+# Dependencias: se instalan limpias dentro de la imagen con "npm ci"
+node_modules
+npm-debug.log*
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Git y CI
+.git
+.gitignore
+.github
+
+# Docker en sí y la BD (la BD corre en su propio contenedor)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+db
+
+# Respaldo del server anterior (ya no se usa)
+server.ANTERIOR.js
+
+# Editor y sistema
+.vscode
+.idea
+*.md
+*.log
+.DS_Store
+Thumbs.db

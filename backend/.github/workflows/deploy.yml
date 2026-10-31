@@ -1,0 +1,209 @@
+# =========================================================
+# CI/CD · Taller Rostrán (API)
+#
+#   Pull request  → revisa el código y comprueba que la imagen Docker se construye (no publica nada)
+#   Push a main   → revisa, construye la imagen, la publica en GitHub Container Registry (GHCR)
+#                   y, si el servidor está configurado, la despliega
+#
+# Requisito: este archivo debe quedar en  <raíz del repositorio>/.github/workflows/
+# y el Dockerfile y package.json en la raíz del repositorio. Si su repositorio contiene
+# varias carpetas (backend/, frontend/…), mueva .github a la raíz y vea los comentarios
+# "SI EL BACKEND ESTÁ EN UNA SUBCARPETA" más abajo.
+#
+# PUBLICAR LA IMAGEN no necesita configurar nada: usa el GITHUB_TOKEN que GitHub da solo.
+#
+# DESPLEGAR AL SERVIDOR (opcional). En GitHub → Settings → Secrets and variables → Actions:
+#   Variables:  DEPLOY_ENABLED = true
+#   Secrets:    DEPLOY_HOST      IP o dominio del servidor
+#               DEPLOY_USER      usuario SSH
+#               DEPLOY_SSH_KEY   clave privada SSH (contenido completo)
+#               DEPLOY_PATH      carpeta del servidor donde están docker-compose.yml, .env y db/init
+#               DEPLOY_PORT      (opcional) puerto SSH, por defecto 22
+#
+# DESPLEGAR EN RENDER (opcional). Variables: RENDER_ENABLED = true
+#   Secrets:    RENDER_DEPLOY_HOOK   la "Deploy Hook" URL del servicio (Render → Settings → Deploy Hook)
+# =========================================================
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:          # permite correrlo a mano desde la pestaña Actions
+
+# Si llegan dos pushes seguidos, el nuevo espera al anterior (nunca se cancela un despliegue a medias).
+# Solo se cancelan las revisiones repetidas de un mismo pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  # SI EL BACKEND ESTÁ EN UNA SUBCARPETA, cámbielo a "backend" y mueva .github a la raíz del repositorio
+  APP_DIR: .
+
+jobs:
+  # ---------------------------------------------------------
+  # 1) Revisar el código
+  # ---------------------------------------------------------
+  test:
+    name: Revisar código
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar la sintaxis de todos los .js
+        run: |
+          find . -name "*.js" -not -path "./node_modules/*" -not -name "server.ANTERIOR.js" -print0 \
+            | xargs -0 -n1 node --check
+          echo "Sintaxis correcta"
+
+      - name: Pruebas (si el proyecto las tiene)
+        run: npm test --if-present
+
+      # Arranca el servidor de verdad (sin BD) para detectar un módulo mal importado o un error al iniciar.
+      # /check-session es pública y no consulta la BD.
+      - name: Probar que el servidor arranca
+        env:
+          DB_PASSWORD: ci
+          SESSION_SECRET: ci
+          PORT: 3000
+        run: |
+          node server.js &
+          PID=$!
+          for i in $(seq 1 15); do
+            if curl -fsS http://127.0.0.1:3000/check-session; then echo; kill $PID; exit 0; fi
+            sleep 1
+          done
+          echo "El servidor no respondió"; kill $PID || true; exit 1
+
+  # ---------------------------------------------------------
+  # 2) Construir la imagen Docker (y publicarla si no es un pull request)
+  # ---------------------------------------------------------
+  docker:
+    name: Imagen Docker
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write           # para publicar en GHCR
+    outputs:
+      image: ${{ steps.nombre.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Los nombres de imagen deben ir en minúsculas; el repositorio puede tener mayúsculas
+      - name: Nombre de la imagen
+        id: nombre
+        run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesión en GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Etiquetas de la imagen
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.nombre.outputs.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.APP_DIR }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------
+  # 3) Desplegar en el servidor (solo en main y solo si DEPLOY_ENABLED = true)
+  # ---------------------------------------------------------
+  deploy:
+    name: Desplegar
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production     # en Settings → Environments puede exigir aprobación manual antes de desplegar
+    permissions:
+      contents: read
+      packages: read            # el servidor usa este token para descargar la imagen desde GHCR
+    steps:
+      - name: Actualizar el servidor por SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          script: |
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            # Entrar a GHCR con el token temporal de este despliegue (la imagen puede ser privada)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # Dejar la versión exacta de este commit en .env para que "docker compose" la recuerde
+            grep -v '^API_IMAGE=' .env > .env.tmp || true
+            echo "API_IMAGE=${{ needs.docker.outputs.image }}:sha-${{ github.sha }}" >> .env.tmp
+            mv .env.tmp .env
+
+            docker compose pull api
+            docker compose up -d --no-deps api
+            docker image prune -f
+
+            # Esperar a que responda; si no, el despliegue se marca como fallido
+            for i in $(seq 1 20); do
+              if [ "$(docker inspect -f '{{.State.Health.Status}}' $(docker compose ps -q api))" = "healthy" ]; then
+                echo "API saludable"; exit 0
+              fi
+              sleep 3
+            done
+            docker compose logs --tail 50 api
+            echo "La API no quedó saludable"; exit 1
+
+  # ---------------------------------------------------------
+  # 3b) Avisar a Render que hay una imagen nueva (solo en main y solo si RENDER_ENABLED = true)
+  # Render no se entera solo cuando se publica una imagen en GHCR: este aviso lo hace desplegar.
+  # ---------------------------------------------------------
+  deploy-render:
+    name: Desplegar en Render
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.RENDER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pedir a Render que use la imagen de este commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMG: ${{ needs.docker.outputs.image }}:sha-${{ github.sha }}
+        run: |
+          IMG_ENC=$(jq -rn --arg u "$IMG" '$u|@uri')
+          curl -fsS -X POST "${HOOK}&imgURL=${IMG_ENC}"
+          echo; echo "Render recibió el aviso: $IMG"

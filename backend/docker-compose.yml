@@ -1,0 +1,57 @@
+# API + MySQL del Taller Rostrán.
+#   Desarrollo:   docker compose up -d --build
+#   Producción:   API_IMAGE=ghcr.io/usuario/repo:latest  (lo pone el despliegue automático en .env)
+name: taller-rostran
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    # IMPORTANTE: el código usa nombres como "Clientes" y "Orden_Servicio" (con mayúsculas),
+    # pero MySQL en Linux distingue mayúsculas de minúsculas y en Windows no. Con
+    # lower-case-table-names=1 funciona igual que en su PC con Windows. Solo se puede
+    # fijar al crear la BD por primera vez.
+    command:
+      - --lower-case-table-names=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en el archivo .env}
+      MYSQL_DATABASE: ${DB_NAME:-taller_rost}
+      TZ: America/Managua
+    volumes:
+      - db_data:/var/lib/mysql
+      # Se ejecutan en orden alfabético, SOLO la primera vez (volumen vacío)
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:3306:3306"   # solo para MySQL Workbench desde este mismo equipo
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  api:
+    image: ${API_IMAGE:-taller-api:local}
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Por defecto usa el MySQL de este compose. Con TiDB Cloud basta poner DB_HOST, DB_PORT,
+      # DB_USER y DB_SSL en el .env (y levantar solo la API: docker compose up -d --no-deps api)
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-taller_rost}
+      DB_SSL: ${DB_SSL:-false}
+      SESSION_SECRET: ${SESSION_SECRET:?Falta SESSION_SECRET en el archivo .env}
+      TZ: America/Managua
+    ports:
+      - "${PORT:-3000}:3000"
+
+volumes:
+  db_data:

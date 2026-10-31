@@ -12,11 +12,16 @@
 // 6. Expone:  window.puede("codigo", ...)  y  window.sesionLista (Promise con el usuario)
 // =========================================================
 (function () {
-    const API_ORIG = "http://localhost:3000";
-    // La cookie de sesión solo viaja si página y API usan el MISMO host.
+    const API_ORIG = "http://localhost:3000";   // así está escrito en los demás .js; aquí se reemplaza por la API real
+
+    // URL de la API publicada (Render). Se usa cuando la página NO se abre desde tu PC (p. ej. en GitHub Pages).
+    const API_PRODUCCION = "https://sistema-gest-taller-latest.onrender.com";
+
+    // En tu PC: la cookie de sesión solo viaja si página y API usan el MISMO host.
     // Si abres la página como 127.0.0.1, la API también se llama por 127.0.0.1.
     const host = location.hostname;
-    const API = host && host !== "localhost" ? `http://${host}:3000` : API_ORIG;
+    const enPC = !host || host === "localhost" || /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+    const API = !enPC ? API_PRODUCCION : (host && host !== "localhost" ? `http://${host}:3000` : API_ORIG);
     const esLogin = /login\.html$/i.test(location.pathname);
 
     // ---------- fetch con sesión ----------
