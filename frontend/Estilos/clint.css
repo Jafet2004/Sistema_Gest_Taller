@@ -1,21 +1,59 @@
-* {
+*, *::before, *::after {
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
 }
 
 body {
     margin: 0;
     background: #f8f0f0;
+    font-family: 'Inter', sans-serif;
+    color: #333;
 }
 
 /* ===== HEADER ===== */
 .header {
     background: #b71c1c;
     color: white;
-    padding: 1.3rem 2rem;
+    padding: 1.2rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: nowrap;
+    gap: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-title-container {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.header h2, .header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-user-info {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
 }
 
 .header .btn-volver {
@@ -25,10 +63,17 @@ body {
     color: #b71c1c;
     text-decoration: none;
     font-weight: 600;
+    transition: background 0.3s;
+    white-space: nowrap;
+}
+
+.header .btn-volver:hover {
+    background: #f3dcdc;
 }
 
 main {
     width: 90%;
+    max-width: 1200px;
     margin: 2rem auto;
 }
 
@@ -42,8 +87,10 @@ main {
 }
 
 .form-container h2 {
+    margin-top: 0;
     margin-bottom: 1rem;
     color: #b71c1c;
+    font-size: 1.5rem;
 }
 
 .row {
@@ -58,10 +105,11 @@ input {
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 1rem;
+    width: 100%;
 }
 
 .btn-registrar {
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     width: 100%;
     background: #b71c1c;
     border: none;
@@ -70,7 +118,7 @@ input {
     font-size: 1rem;
     border-radius: 8px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: background 0.3s;
 }
 
 .btn-registrar:hover {
@@ -86,8 +134,10 @@ input {
 }
 
 .clientes-lista h2 {
+    margin-top: 0;
     margin-bottom: 1rem;
     color: #b71c1c;
+    font-size: 1.5rem;
 }
 
 .input-buscar {
@@ -98,45 +148,101 @@ input {
     margin-bottom: 1rem;
 }
 
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 600px;
 }
 
 table th {
     text-align: left;
     background: #f3dcdc;
     color: #b71c1c;
-    padding: 0.7rem;
+    padding: 0.8rem;
+    font-size: 0.95rem;
 }
 
 table td {
     border-bottom: 1px solid #ddd;
-    padding: 0.7rem;
+    padding: 0.8rem;
+    font-size: 0.95rem;
 }
 
 tr:hover {
     background: #fff3f3;
 }
-/* Botón rojo para eliminar y actualizar */
+
+/* Botones de acción (CRUD) */
+.CRUD {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
 .CRUD .btn-eliminar,
 .CRUD .btn-editar {
-    background-color: #e43622; /* rojo */
+    background-color: #e43622;
     color: #fff;
     border: none;
-    padding: 5px 10px;
-    margin: 2px;
+    padding: 6px 10px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .CRUD .btn-eliminar:hover,
 .CRUD .btn-editar:hover {
-    background-color: #a52b1d; /* rojo más oscuro al pasar el mouse */
+    background-color: #a52b1d;
 }
 
 .CRUD .btn-editar i,
 .CRUD .btn-eliminar i {
-    margin-right: auto;
+    margin-right: 0;
+}
+
+/* ========================
+   RESPONSIVE (MÓVILES)
+======================== */
+@media (max-width: 768px) {
+    .header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .header-actions {
+        justify-content: space-between;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    main {
+        width: 95%;
+        margin: 1rem auto;
+    }
+
+    .form-container, .clientes-lista {
+        padding: 1rem;
+    }
+
+    .row {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 0;
+    }
+
+    .row input {
+        margin-bottom: 1rem;
+    }
 }
