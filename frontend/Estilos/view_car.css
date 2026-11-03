@@ -346,3 +346,21 @@
             margin-bottom: 1rem;
             color: #b71c1c;
         }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+@media (max-width: 768px) {
+    .container { padding: 12px; }
+    .header { padding: 1rem; margin-bottom: 1rem; }
+    .header-content { flex-direction: column; align-items: stretch; gap: .8rem; }
+    .header h1 { font-size: 1.25rem; }
+    .header-buttons { flex-wrap: wrap; gap: 8px; }
+    .header-buttons > * { flex: 1 1 130px; justify-content: center; min-height: 44px; }
+    .panel { padding: 1rem; }
+    .info-grid { grid-template-columns: 1fr; }
+    .imagenes-container { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    input, select, textarea { width: 100%; font-size: 16px; }
+}
+@media (max-width: 480px) { .header h1 { font-size: 1.05rem; } }
+

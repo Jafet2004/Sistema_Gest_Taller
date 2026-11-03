@@ -196,3 +196,15 @@
 .modal-confirm-btn-aceptar:hover {
     background: #8b0000;
 }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+@media (max-width: 480px) {
+    #toast-sistema-container { top: 10px; left: 10px; right: 10px; max-width: none; }
+    .toast-sistema { padding: 12px; }
+    .modal-confirm-caja { width: 94%; }
+    .modal-confirm-footer { flex-direction: column-reverse; }
+    .modal-confirm-footer button { width: 100%; min-height: 44px; }
+}
+

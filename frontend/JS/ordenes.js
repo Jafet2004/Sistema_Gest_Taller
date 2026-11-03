@@ -108,21 +108,43 @@ function limpiarRecepcion() {
 // ---------- servicios (checkboxes) ----------
 function pintarCatalogo() {
     $("listaServicios").innerHTML = catalogo.map(t => `
-        <label class="serv-op">
-            <input type="checkbox" value="${t.id_trabajo}">
-            <span><b>${esc(t.Name_trabajo)}</b><small>${esc(t.Detalle_trab)}</small></span>
-            <span class="precio">${C(t.Total)}</span>
-        </label>`).join("") || `<p class="hint">No hay servicios en el catálogo. Créelos en <a href="serv.html">Servicios</a>.</p>`;
+        <div class="serv-item">
+            <label class="serv-op">
+                <input type="checkbox" value="${t.id_trabajo}" data-srv>
+                <span><b>${esc(t.Name_trabajo)}</b><small>${esc(t.Detalle_trab)}</small></span>
+                <span class="precio" data-precio="${t.id_trabajo}">${C(t.Total)}</span>
+            </label>
+            <label class="serv-inv" hidden>
+                <input type="checkbox" data-inv="${t.id_trabajo}" checked>
+                <span>Usar repuestos/insumos del taller
+                    <small>Desmarque si el cliente trae las piezas: solo se cobra mano de obra (${C(t.Costo_Mano_Obra)})</small></span>
+            </label>
+        </div>`).join("") || `<p class="hint">No hay servicios en el catálogo. Créelos en <a href="serv.html">Servicios</a>.</p>`;
     $("mNuevoServ").innerHTML = `<option value="">Seleccione…</option>` +
         catalogo.map(t => `<option value="${t.id_trabajo}">${esc(t.Name_trabajo)} — ${C(t.Total)}</option>`).join("");
 }
 
+const usaInv = id => {
+    const c = $("listaServicios").querySelector(`[data-inv="${id}"]`);
+    return !c || c.checked;
+};
+const precioDe = (t, usa) => usa ? Number(t.Total) : Number(t.Costo_Mano_Obra || 0);
+
 function seleccionados() {
-    return [...$("listaServicios").querySelectorAll("input:checked")].map(i => Number(i.value));
+    return [...$("listaServicios").querySelectorAll("input[data-srv]:checked")].map(i => Number(i.value));
 }
 function actualizarTotal() {
     const ids = seleccionados();
-    const total = catalogo.filter(t => ids.includes(t.id_trabajo)).reduce((s, t) => s + Number(t.Total), 0);
+    // muestra u oculta la opción de inventario y recalcula el precio de cada servicio
+    catalogo.forEach(t => {
+        const marcado = ids.includes(t.id_trabajo);
+        const op = $("listaServicios").querySelector(`[data-inv="${t.id_trabajo}"]`)?.closest(".serv-inv");
+        if (op) op.hidden = !marcado;
+        const pr = $("listaServicios").querySelector(`[data-precio="${t.id_trabajo}"]`);
+        if (pr) pr.textContent = C(precioDe(t, usaInv(t.id_trabajo)));
+    });
+    const total = catalogo.filter(t => ids.includes(t.id_trabajo))
+        .reduce((s, t) => s + precioDe(t, usaInv(t.id_trabajo)), 0);
     $("cantServ").textContent = `${ids.length} servicio(s)`;
     $("totalOrden").textContent = C(total);
 }
@@ -143,6 +165,7 @@ $("formOrden").addEventListener("submit", async e => {
             body: {
                 id_Vehic: vehiculoSel.id_Vehic,
                 servicios,
+                sin_inventario: servicios.filter(id => !usaInv(id)),
                 kilometraje: $("kilometraje").value || null,
                 observaciones: $("observaciones").value,
                 foto_int: fotosEntrada
@@ -229,7 +252,8 @@ async function abrirOrden(id) {
 
         $("mServicios").innerHTML = o.detalle.map(d => `
             <tr>
-                <td><b>${esc(d.Name_trabajo)}</b><br><small>${esc(d.Detalle_trab)}</small></td>
+                <td><b>${esc(d.Name_trabajo)}</b><br><small>${esc(d.Detalle_trab)}</small>
+                    ${Number(d.usa_inventario) ? "" : `<br><span class="badge gris" title="El cliente trae las piezas">Solo mano de obra</span>`}</td>
                 <td>${activa && puede("ordenes.ver_todas") && puede("ordenes.avanzar")
                     ? `<select data-mec="${d.id_detalle}">${opcionesTrab(d.id_trab)}</select>`
                     : esc(d.mecanico || "—")}</td>
@@ -350,13 +374,24 @@ $("btnAgregarRep").addEventListener("click", async () => {
     } catch (err) { notificarSistema(err.message, "error"); }
 });
 
+function actualizarModalServ() {
+    const t = catalogo.find(x => x.id_trabajo == $("mNuevoServ").value);
+    $("mServInvBox").hidden = !t;
+    if (t) $("mServInvTxt").textContent = $("mServInv").checked
+        ? `Se cobrará ${C(t.Total)} y se usará el inventario del taller`
+        : `Solo mano de obra: ${C(t.Costo_Mano_Obra)} (el cliente trae las piezas)`;
+}
+$("mNuevoServ").addEventListener("change", actualizarModalServ);
+$("mServInv").addEventListener("change", actualizarModalServ);
+
 $("btnAgregarServ").addEventListener("click", async () => {
     const id = $("mNuevoServ").value;
     if (!id) return notificarSistema("Seleccione un servicio", "error");
     try {
-        await api(`/ordenes/${ordenAbierta.id_orden}/servicios`, { method: "POST", body: { id_trabajo: id } });
+        await api(`/ordenes/${ordenAbierta.id_orden}/servicios`, { method: "POST", body: { id_trabajo: id, usa_inventario: $("mServInv").checked } });
         notificarSistema("Servicio agregado", "exito");
         $("mNuevoServ").value = "";
+        $("mServInv").checked = true; actualizarModalServ();
         refrescarOrden();
     } catch (err) { notificarSistema(err.message, "error"); }
 });

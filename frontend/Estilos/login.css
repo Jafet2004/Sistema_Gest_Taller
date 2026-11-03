@@ -72,3 +72,15 @@ a:hover {
 .shadow-lg {
     box-shadow: 0 10px 25px rgba(183, 28, 28, 0.1) !important;
 }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+@media (max-width: 576px) {
+    body { padding: 0 .5rem; }
+    .card-body { padding: 1.4rem 1.1rem; }
+    .form-control { font-size: 16px; padding: 11px 16px; }
+    .logo img { max-width: 90px; height: auto; }
+    .btn-primary { min-height: 46px; }
+}
+

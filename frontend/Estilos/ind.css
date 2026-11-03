@@ -422,3 +422,20 @@ body {
         align-items: flex-start;
     }
 }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+@media (max-width: 900px) {
+    .header { position: static; }                 /* un encabezado alto y fijo se comería la pantalla */
+    .logo { justify-content: center; }
+    .nav-link { justify-content: center; padding: .6rem; min-height: 44px; }
+    .modulo-bloque { padding: 1rem; }
+}
+@media (max-width: 480px) {
+    .notifications-bar { padding: .8rem; }
+    .stat { min-width: 0; }
+    .card-btn { min-height: 44px; }
+    .logo img { width: 42px; height: 42px; }
+}
+

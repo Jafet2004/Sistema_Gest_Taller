@@ -308,3 +308,20 @@
   font-weight: 700;
   color: #b71c1c;
 }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+@media (max-width: 768px) {
+    .stat-card, .chart-card, .table-container { padding: 1rem; border-radius: 12px; }
+    .stats-grid, .charts-container { gap: 1rem; }
+    .stat-number { font-size: 1.6rem; }
+    .chart-body { height: 220px; }
+    .notification { left: 10px; right: 10px; bottom: 10px; }
+}
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .resumen-stats { grid-template-columns: 1fr 1fr; }
+    .resumen-value { font-size: 1.25rem; }
+}
+

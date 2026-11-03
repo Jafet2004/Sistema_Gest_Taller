@@ -131,11 +131,16 @@ router.get("/ordenes", h(async (req, res) => {
 // =========================================================
 // DETALLE (servicios, repuestos y fotos)
 // =========================================================
+// Precio del servicio: completo (con repuestos/insumos del taller) o solo mano de obra
+// (el cliente trae sus propias piezas).
+const precioServicio = (t, usaInv) => usaInv ? Number(t.Total) : Number(t.Costo_Mano_Obra || 0);
+const flagInv = v => (v === false || v === 0 || v === "0" || v === "false") ? 0 : 1;
+
 router.get("/ordenes/:id", h(async (req, res) => {
     await verificarPropia(req, req.params.id);
     const orden = await obtenerOrden(req.params.id);
     const [detalle] = await db.query(`
-        SELECT d.id_detalle, d.id_trabajo, d.precio, d.id_trab, t.Name_trabajo, t.Detalle_trab,
+        SELECT d.id_detalle, d.id_trabajo, d.precio, d.usa_inventario, d.id_trab, t.Name_trabajo, t.Detalle_trab,
                CONCAT(tr.pr_name, ' ', tr.pr_lastname) AS mecanico
         FROM Orden_Servicio_Detalle d
         JOIN List_Trabajo t ON t.id_trabajo = d.id_trabajo
@@ -164,6 +169,9 @@ router.get("/ordenes/:id", h(async (req, res) => {
 router.post("/ordenes", h(async (req, res) => {
     const { id_Vehic, kilometraje, observaciones, foto_int } = req.body;
     const servicios = [...new Set((req.body.servicios || []).map(Number).filter(Boolean))];
+    const ids = servicios;
+    // Servicios donde el cliente trae sus propias piezas: solo se cobra mano de obra
+    const sinInv = new Set((req.body.sin_inventario || []).map(Number).filter(Boolean));
 
     if (!id_Vehic) throw err(400, "Seleccione el vehículo");
     if (!servicios.length) throw err(400, "Seleccione al menos un servicio");
@@ -180,8 +188,8 @@ router.post("/ordenes", h(async (req, res) => {
             throw err(409, `Este vehículo ya está en el taller (orden #${abiertas[0].id_orden}). Agregue los servicios a esa orden.`);
 
         const [cat] = await conn.query(
-            "SELECT id_trabajo, Total FROM List_Trabajo WHERE id_trabajo IN (?)", [servicios]);
-        if (cat.length !== servicios.length) throw err(400, "Algún servicio seleccionado no existe");
+            "SELECT id_trabajo, Total, Costo_Mano_Obra FROM List_Trabajo WHERE id_trabajo IN (?)", [ids]);
+        if (cat.length !== ids.length) throw err(400, "Algún servicio seleccionado no existe");
 
         const [r] = await conn.query(
             `INSERT INTO Orden_Servicio (id_Vehic, id_client, kilometraje, observaciones, foto_int)
@@ -190,10 +198,11 @@ router.post("/ordenes", h(async (req, res) => {
 
         // Cada servicio + los repuestos de su receta
         for (const t of cat) {
+            const usa = flagInv(sinInv.has(t.id_trabajo) ? 0 : 1);
             const [d] = await conn.query(
-                "INSERT INTO Orden_Servicio_Detalle (id_orden, id_trabajo, precio) VALUES (?, ?, ?)",
-                [r.insertId, t.id_trabajo, t.Total]);
-            await stock.agregarRecetaAOrden(conn, r.insertId, d.insertId, t.id_trabajo);
+                "INSERT INTO Orden_Servicio_Detalle (id_orden, id_trabajo, precio, usa_inventario) VALUES (?, ?, ?, ?)",
+                [r.insertId, t.id_trabajo, precioServicio(t, usa), usa]);
+            if (usa) await stock.agregarRecetaAOrden(conn, r.insertId, d.insertId, t.id_trabajo);
         }
         await registrarEstado(conn, r.insertId, "RECIBIDO", req);
         return r.insertId;
@@ -220,13 +229,14 @@ router.post("/ordenes", h(async (req, res) => {
 router.post("/ordenes/:id/servicios", h(async (req, res) => {
     await enTransaccion(async conn => {
         const o = await ordenEditable(conn, req.params.id);
-        const [[t]] = await conn.query("SELECT id_trabajo, Total FROM List_Trabajo WHERE id_trabajo = ?",
+        const [[t]] = await conn.query("SELECT id_trabajo, Total, Costo_Mano_Obra FROM List_Trabajo WHERE id_trabajo = ?",
             [req.body.id_trabajo]);
+        const usa = flagInv(req.body.usa_inventario);
         if (!t) throw err(404, "Servicio no encontrado");
         const [d] = await conn.query(
-            "INSERT INTO Orden_Servicio_Detalle (id_orden, id_trabajo, precio, id_trab) VALUES (?, ?, ?, ?)",
-            [o.id_orden, t.id_trabajo, t.Total, req.body.id_trab || null]);
-        await stock.agregarRecetaAOrden(conn, o.id_orden, d.insertId, t.id_trabajo);
+            "INSERT INTO Orden_Servicio_Detalle (id_orden, id_trabajo, precio, usa_inventario, id_trab) VALUES (?, ?, ?, ?, ?)",
+            [o.id_orden, t.id_trabajo, precioServicio(t, usa), usa, req.body.id_trab || null]);
+        if (usa) await stock.agregarRecetaAOrden(conn, o.id_orden, d.insertId, t.id_trabajo);
 
         // Si el trabajo ya inició, los repuestos salen de bodega de una vez
         if (stock.ESTADOS_CONSUMO.includes(o.estado)) {

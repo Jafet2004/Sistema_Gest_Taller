@@ -176,3 +176,29 @@ tbody tr:hover { background: #fafafa; }
 /* Las confirmaciones y avisos de notificaciones.js deben quedar encima de los modales */
 .modal-confirm-overlay { z-index: 2000 !important; }
 #toast-sistema-container { z-index: 2100 !important; }
+
+/* =========================================================
+   RESPONSIVO MÓVIL (agregado al final: no altera el escritorio)
+   ========================================================= */
+html { -webkit-text-size-adjust: 100%; }
+@media (max-width: 768px) {
+    main { width: 94%; margin: 1rem auto; }
+    .header { flex-wrap: wrap; gap: .6rem; }
+    .header h1 { font-size: 1.2rem; }
+    .card { padding: 1rem; }
+    .row { flex-wrap: wrap; }
+    .row > .campo { flex: 1 1 100%; min-width: 0; }
+    input, select, textarea { font-size: 16px; min-width: 0; }
+    .btn, .btn-rojo, .btn-gris { min-height: 44px; }
+    .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tabla-wrap table { min-width: 560px; }
+    .modal-caja { width: 94%; max-width: 100%; max-height: 92vh; overflow-y: auto; }
+    .acciones { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+    .kpis { grid-template-columns: 1fr; }
+    .denoms { grid-template-columns: 1fr 1fr; }
+    .saldo-box { grid-template-columns: 1fr; }
+    .acciones .btn { flex: 1 1 100%; }
+}
+
