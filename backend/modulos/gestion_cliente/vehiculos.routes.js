@@ -41,11 +41,23 @@ const SELECT_VEHICULO = `
              WHERE d.id_orden = o.id_orden) AS Name_trabajo,
            tr.pr_name AS trab_pr_name, tr.pr_lastname AS trab_pr_lastname
     FROM Vehiculos v
-    JOIN Clientes c ON c.id_client = v.id_client
-    LEFT JOIN Orden_Servicio o ON o.id_orden = (
-        SELECT MAX(id_orden) FROM Orden_Servicio WHERE id_Vehic = v.id_Vehic
-    )
-    LEFT JOIN Trabajador tr ON tr.id_trab = o.id_trab
+JOIN Clientes c
+    ON c.id_client = v.id_client
+
+LEFT JOIN (
+    SELECT
+        id_Vehic,
+        MAX(id_orden) AS id_orden
+    FROM orden_servicio
+    GROUP BY id_Vehic
+) ultima_orden
+    ON ultima_orden.id_Vehic = v.id_Vehic
+
+LEFT JOIN orden_servicio o
+    ON o.id_orden = ultima_orden.id_orden
+
+LEFT JOIN trabajador tr
+    ON tr.id_trab = o.id_trab
 `;
 
 router.get("/vehiculos", h(async (req, res) => {
